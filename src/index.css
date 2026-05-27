@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+/* Добавьте ЭТО ниже */
+* {
+    box-sizing: border-box;
+}
+
+html, body, #root {
+    width: 100%;
+    overflow-x: hidden;
+}
+
+/* Принудительно делаем все картинки адаптивными */
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Для всех карточек и контейнеров — запрещаем вылезать за экран */
+div, section, main, article {
+    max-width: 100%;
+}
+
+/* Для телефонов: отступы по бокам */
+@media (max-width: 540px) {
+    body {
+        overflow-x: hidden;
+    }
+    
+    /* Если у вас есть элементы с фиксированной шириной — сбрасываем */
+    [style*="width:"] {
+        max-width: 100vw !important;
+    }
+}

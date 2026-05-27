@@ -1,0 +1,544 @@
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useApp } from '../context/AppContext';
+import { Phone, MapPin, Star, Briefcase, Crown, CheckCircle, Edit2, Settings, LogOut, Heart, MessageCircle, Clock, Camera, X, Plus, Edit3, Trash2 } from 'lucide-react';
+import { regions } from '../data';
+
+// Компонент для загрузки аватара
+function AvatarUpload({ currentAvatar, onAvatarChange, size = 120 }: { 
+  currentAvatar?: string; 
+  onAvatarChange: (avatarUrl: string) => void; 
+  size?: number;
+}) {
+  const [preview, setPreview] = useState<string | null>(currentAvatar || null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const { t } = useApp();
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert(t('onlyImages') || 'Только изображения');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert(t('maxSize') || 'Файл не более 5MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result as string;
+      setPreview(result);
+      onAvatarChange(result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemove = () => {
+    setPreview(null);
+    onAvatarChange('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  return (
+    <div className="relative inline-block">
+      <div
+        className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center cursor-pointer group"
+        style={{ width: size, height: size }}
+        onClick={() => fileInputRef.current?.click()}
+      >
+        {preview ? (
+          <img src={preview} alt="Avatar" className="w-full h-full object-cover" />
+        ) : (
+          <span className="text-white text-5xl font-bold">
+            {currentAvatar ? '?' : '📷'}
+          </span>
+        )}
+        <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+          <Camera className="w-8 h-8 text-white" />
+        </div>
+      </div>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileSelect}
+        className="hidden"
+      />
+      {preview && (
+        <button
+          onClick={handleRemove}
+          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+export default function Profile() {
+  const { t, language, user, setUser, setIsLoggedIn, isLoggedIn } = useApp();
+  const [editMode, setEditMode] = useState(false);
+  const [name, setName] = useState(user?.name || '');
+  const [avatar, setAvatar] = useState(user?.avatar || '');
+  const [aboutUz, setAboutUz] = useState(user?.aboutUz || '');
+  const [aboutRu, setAboutRu] = useState(user?.aboutRu || '');
+  const [experience, setExperience] = useState(user?.experience || 0);
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [services, setServices] = useState<any[]>(user?.services || []);
+  const [showServiceModal, setShowServiceModal] = useState(false);
+  const [editingService, setEditingService] = useState<{ index: number; nameUz: string; nameRu: string; price: number } | null>(null);
+  const [newService, setNewService] = useState({ nameUz: '', nameRu: '', price: 0 });
+  const navigate = useNavigate();
+
+  if (!isLoggedIn || !user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            {language === 'uz' ? 'Tizimga kiring' : 'Войдите в систему'}
+          </h2>
+          <p className="text-gray-500 mb-6">
+            {language === 'uz' ? 'Profilni ko\'rish uchun tizimga kiring' : 'Войдите, чтобы увидеть профиль'}
+          </p>
+          <Link
+            to="/login"
+            className="inline-block bg-blue-600 text-white px-8 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors"
+          >
+            {t('login')}
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const handleAvatarChange = (avatarUrl: string) => {
+    setAvatar(avatarUrl);
+    if (setUser) {
+      setUser({ ...user, avatar: avatarUrl } as any);
+    }
+  };
+
+  const handleSave = () => {
+    setUser({ 
+      ...user, 
+      name, 
+      avatar,
+      phone,
+      aboutUz, 
+      aboutRu, 
+      experience,
+      services,
+    } as any);
+    setEditMode(false);
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    setIsLoggedIn(false);
+    navigate('/');
+  };
+
+  const addService = () => {
+    if (newService.nameUz && newService.nameRu && newService.price > 0) {
+      const updatedServices = [...services, { ...newService }];
+      setServices(updatedServices);
+      setUser({ ...user, services: updatedServices } as any);
+      setNewService({ nameUz: '', nameRu: '', price: 0 });
+      setShowServiceModal(false);
+    }
+  };
+
+  const editService = (index: number) => {
+    const service = services[index];
+    setEditingService({ index, ...service });
+    setShowServiceModal(true);
+  };
+
+  const updateService = () => {
+    if (editingService) {
+      const updatedServices = [...services];
+      updatedServices[editingService.index] = {
+        nameUz: editingService.nameUz,
+        nameRu: editingService.nameRu,
+        price: editingService.price,
+      };
+      setServices(updatedServices);
+      setUser({ ...user, services: updatedServices } as any);
+      setEditingService(null);
+      setShowServiceModal(false);
+    }
+  };
+
+  const deleteService = (index: number) => {
+    const updatedServices = services.filter((_, i) => i !== index);
+    setServices(updatedServices);
+    setUser({ ...user, services: updatedServices } as any);
+  };
+
+  const currentRegion = regions.find(r => r.id === user.region);
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-4xl mx-auto px-4">
+        {/* Profile Header */}
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 h-32"></div>
+          <div className="px-8 pb-8">
+            <div className="flex flex-col md:flex-row md:items-end gap-6 -mt-16">
+              <div className="relative">
+                <AvatarUpload
+                  currentAvatar={avatar || user.avatar}
+                  onAvatarChange={handleAvatarChange}
+                  size={120}
+                />
+                {user.isVIP && (
+                  <div className="absolute -top-2 -right-2 bg-yellow-500 text-white p-2 rounded-full">
+                    <Crown className="w-5 h-5" />
+                  </div>
+                )}
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-3">
+                  <h1 className="text-2xl font-bold text-gray-900">{user.name}</h1>
+                  {user.isVerified && <CheckCircle className="w-6 h-6 text-blue-500" />}
+                  {user.isVIP && <Crown className="w-6 h-6 text-yellow-500" />}
+                </div>
+                <div className="flex items-center gap-4 text-gray-500 mt-2 flex-wrap">
+                  <span className="flex items-center gap-1">
+                    <Phone className="w-4 h-4" />
+                    {user.phone}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <MapPin className="w-4 h-4" />
+                    {language === 'uz' ? currentRegion?.nameUz : currentRegion?.nameRu}
+                  </span>
+                </div>
+                <span className={`inline-block mt-3 px-4 py-1.5 rounded-full text-sm font-medium ${
+                  user.role === 'master'
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'bg-green-100 text-green-700'
+                }`}>
+                  {user.role === 'master' ? t('asMaster') : t('asCustomer')}
+                </span>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setEditMode(!editMode)}
+                  className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
+                >
+                  <Edit2 className="w-4 h-4" />
+                  {t('editProfile')}
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 px-4 py-2 border border-red-300 text-red-600 rounded-xl hover:bg-red-50 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  {t('logout')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats */}
+        {user.role === 'master' && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 text-center">
+              <Star className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-gray-900">{user.rating || 4.9}</p>
+              <p className="text-sm text-gray-500">{t('rating')}</p>
+            </div>
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 text-center">
+              <Briefcase className="w-8 h-8 text-blue-500 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-gray-900">{user.jobsCompleted || 0}</p>
+              <p className="text-sm text-gray-500">{t('completedJobs')}</p>
+            </div>
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 text-center">
+              <Clock className="w-8 h-8 text-green-500 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-gray-900">{experience || user.experience || 0}</p>
+              <p className="text-sm text-gray-500">{t('experience')}</p>
+            </div>
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 text-center">
+              <Heart className="w-8 h-8 text-red-500 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-gray-900">{user.favoritesCount || 0}</p>
+              <p className="text-sm text-gray-500">{t('favorites')}</p>
+            </div>
+          </div>
+        )}
+
+        <div className="grid md:grid-cols-3 gap-6">
+          {/* Main Content */}
+          <div className="md:col-span-2 space-y-6">
+            {/* About */}
+            <div className="bg-white rounded-2xl p-6 border border-gray-100">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">{t('aboutMe')}</h2>
+              {editMode ? (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('name')}</label>
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('phone')}</label>
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  {user.role === 'master' && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          {t('aboutMe')} (UZ)
+                        </label>
+                        <textarea
+                          value={aboutUz}
+                          onChange={(e) => setAboutUz(e.target.value)}
+                          rows={3}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          {t('aboutMe')} (RU)
+                        </label>
+                        <textarea
+                          value={aboutRu}
+                          onChange={(e) => setAboutRu(e.target.value)}
+                          rows={3}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          {t('experience')} ({t('years')})
+                        </label>
+                        <input
+                          type="number"
+                          value={experience}
+                          onChange={(e) => setExperience(parseInt(e.target.value) || 0)}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </>
+                  )}
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleSave}
+                      className="bg-blue-600 text-white px-6 py-2 rounded-xl hover:bg-blue-700 transition-colors"
+                    >
+                      {t('save')}
+                    </button>
+                    <button
+                      onClick={() => setEditMode(false)}
+                      className="border border-gray-300 px-6 py-2 rounded-xl hover:bg-gray-50 transition-colors"
+                    >
+                      {t('cancel')}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-gray-600">
+                    {user.role === 'master' 
+                      ? (language === 'uz' ? (aboutUz || user.aboutUz || 'Ma\'lumot kiritilmagan') : (aboutRu || user.aboutRu || 'Информация не добавлена'))
+                      : (language === 'uz' ? 'Buyurtmachi' : 'Заказчик')}
+                  </p>
+                  <p className="text-sm text-gray-500 mt-3 flex items-center gap-1">
+                    <Camera className="w-4 h-4" />
+                    {t('avatarTip') || 'Нажмите на фото, чтобы загрузить аватар'}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Services (for masters) - с возможностью редактирования */}
+            {user.role === 'master' && (
+              <div className="bg-white rounded-2xl p-6 border border-gray-100">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold text-gray-900">{t('myServices')}</h2>
+                  <button
+                    onClick={() => {
+                      setEditingService(null);
+                      setNewService({ nameUz: '', nameRu: '', price: 0 });
+                      setShowServiceModal(true);
+                    }}
+                    className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-blue-700 transition"
+                  >
+                    <Plus className="w-4 h-4" />
+                    {language === 'uz' ? 'Xizmat qo\'shish' : 'Добавить услугу'}
+                  </button>
+                </div>
+                
+                {services.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    {language === 'uz' 
+                      ? 'Hozircha xizmatlar qo\'shilmagan. "Xizmat qo\'shish" tugmasini bosing.'
+                      : 'Услуги пока не добавлены. Нажмите кнопку "Добавить услугу".'}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {services.map((service, index) => (
+                      <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                        <div>
+                          <span className="font-medium text-gray-900">
+                            {language === 'uz' ? service.nameUz : service.nameRu}
+                          </span>
+                          <span className="text-green-600 font-semibold ml-3">
+                            {service.price.toLocaleString('ru-RU')} {t('sum')}
+                          </span>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => editService(index)}
+                            className="text-blue-600 hover:text-blue-700 p-1"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => deleteService(index)}
+                            className="text-red-600 hover:text-red-700 p-1"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            <div className="bg-white rounded-2xl p-6 border border-gray-100">
+              <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Settings className="w-5 h-5" />
+                {t('settings')}
+              </h3>
+              <nav className="space-y-2">
+                <Link to="/profile/jobs" className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl transition-colors">
+                  <Briefcase className="w-5 h-5 text-gray-400" />
+                  <span>{t('myJobs')}</span>
+                </Link>
+                <Link to="/profile/responses" className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl transition-colors">
+                  <MessageCircle className="w-5 h-5 text-gray-400" />
+                  <span>{t('myResponses')}</span>
+                </Link>
+                <Link to="/favorites" className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl transition-colors">
+                  <Heart className="w-5 h-5 text-gray-400" />
+                  <span>{t('favorites')}</span>
+                </Link>
+              </nav>
+            </div>
+
+            {!user.isVIP && user.role === 'master' && (
+              <div className="bg-gradient-to-r from-yellow-500 to-amber-600 rounded-2xl p-6 text-white">
+                <Crown className="w-10 h-10 mb-3" />
+                <h3 className="font-bold text-lg mb-2">{t('becomeVIP')}</h3>
+                <p className="text-yellow-100 text-sm mb-4">{t('vipDesc')}</p>
+                <button className="w-full bg-white text-amber-600 py-2 rounded-xl font-semibold hover:bg-yellow-50 transition-colors">
+                  {t('becomeVIPBtn')}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Modal for adding/editing service */}
+      {showServiceModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold mb-4">
+              {editingService !== null 
+                ? (language === 'uz' ? 'Xizmatni tahrirlash' : 'Редактировать услугу')
+                : (language === 'uz' ? 'Yangi xizmat' : 'Новая услуга')}
+            </h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Название (UZ)
+                </label>
+                <input
+                  type="text"
+                  value={editingService ? editingService.nameUz : newService.nameUz}
+                  onChange={(e) => editingService 
+                    ? setEditingService({ ...editingService, nameUz: e.target.value })
+                    : setNewService({ ...newService, nameUz: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-xl"
+                  placeholder="Santexnika o'rnatish"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Название (RU)
+                </label>
+                <input
+                  type="text"
+                  value={editingService ? editingService.nameRu : newService.nameRu}
+                  onChange={(e) => editingService
+                    ? setEditingService({ ...editingService, nameRu: e.target.value })
+                    : setNewService({ ...newService, nameRu: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-xl"
+                  placeholder="Установка сантехники"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('price')} ({t('sum')})
+                </label>
+                <input
+                  type="number"
+                  value={editingService ? editingService.price : newService.price}
+                  onChange={(e) => editingService
+                    ? setEditingService({ ...editingService, price: parseInt(e.target.value) || 0 })
+                    : setNewService({ ...newService, price: parseInt(e.target.value) || 0 })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-xl"
+                  placeholder="150000"
+                />
+              </div>
+            </div>
+            
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={editingService ? updateService : addService}
+                className="flex-1 bg-blue-600 text-white py-2 rounded-xl font-semibold hover:bg-blue-700"
+              >
+                {editingService ? t('save') : t('add')}
+              </button>
+              <button
+                onClick={() => {
+                  setShowServiceModal(false);
+                  setEditingService(null);
+                }}
+                className="flex-1 border border-gray-300 py-2 rounded-xl font-semibold hover:bg-gray-50"
+              >
+                {t('cancel')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

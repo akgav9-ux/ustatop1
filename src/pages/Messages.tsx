@@ -1,9 +1,94 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, MessageCircle } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { supabase } from '../lib/supabaseClient';
+import { MessageCircle, ArrowLeft } from 'lucide-react';
 
 export default function Messages() {
-  const { t, language } = useApp();
+  const { user, language } = useApp();
+  const [chats, setChats] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadChats = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Ошибка:', error);
+      } else {
+        const uniqueChats = new Map();
+        data?.forEach(msg => {
+          const chatKey = msg.chat_id;
+          if (!uniqueChats.has(chatKey)) {
+            const otherId = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id;
+            const otherName = msg.sender_id === user.id ? msg.receiver_name : msg.sender_name;
+            uniqueChats.set(chatKey, {
+              chat_id: chatKey,
+              other_id: otherId,
+              other_name: otherName || 'Пользователь',
+              last_message: msg.text,
+              last_message_time: msg.created_at,
+              is_read: msg.receiver_id === user.id ? msg.is_read : true,
+              unread_count: msg.receiver_id === user.id && !msg.is_read ? 1 : 0
+            });
+          } else {
+            const existing = uniqueChats.get(chatKey);
+            if (msg.receiver_id === user.id && !msg.is_read) {
+              existing.unread_count += 1;
+              existing.is_read = false;
+              existing.last_message = msg.text;
+              existing.last_message_time = msg.created_at;
+            }
+          }
+        });
+        setChats(Array.from(uniqueChats.values()));
+      }
+    } catch (err) {
+      console.error('Ошибка:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadChats();
+
+    const handleUpdate = () => loadChats();
+    window.addEventListener('messageRead', handleUpdate);
+    window.addEventListener('refreshCounters', handleUpdate);
+    window.addEventListener('messageSent', handleUpdate);
+
+    const channel = supabase
+      .channel('messages-realtime')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `receiver_id=eq.${user?.id}`,
+      }, () => loadChats())
+      .subscribe();
+
+    return () => {
+      window.removeEventListener('messageRead', handleUpdate);
+      window.removeEventListener('refreshCounters', handleUpdate);
+      window.removeEventListener('messageSent', handleUpdate);
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -16,12 +101,49 @@ export default function Messages() {
             {language === 'uz' ? 'Xabarlar' : 'Сообщения'}
           </h1>
         </div>
-        <div className="bg-white rounded-2xl p-12 text-center border border-gray-100">
-          <MessageCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500">
-            {language === 'uz' ? 'Hozircha xabarlar yo\'q' : 'Пока нет сообщений'}
-          </p>
-        </div>
+
+        {chats.length === 0 ? (
+          <div className="bg-white rounded-2xl p-12 text-center border">
+            <MessageCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500">
+              {language === 'uz' ? 'Hozircha xabarlar yo\'q' : 'Пока нет сообщений'}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {chats.map(chat => (
+              <Link
+                key={chat.chat_id}
+                to={`/chat/${chat.other_id}`}
+                className={`bg-white rounded-2xl p-4 hover:shadow-md transition-shadow border block ${
+                  !chat.is_read ? 'border-blue-300 bg-blue-50/30' : 'border-gray-100'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                    {chat.other_name?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-start">
+                      <p className="font-semibold text-gray-900 truncate">{chat.other_name}</p>
+                      <p className="text-xs text-gray-400 ml-2 flex-shrink-0">
+                        {new Date(chat.last_message_time).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <p className="text-sm text-gray-500 truncate flex-1">{chat.last_message}</p>
+                      {chat.unread_count > 0 && (
+                        <span className="w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center ml-2 flex-shrink-0">
+                          {chat.unread_count > 99 ? '99+' : chat.unread_count}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

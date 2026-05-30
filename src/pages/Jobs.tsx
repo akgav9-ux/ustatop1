@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { categories, regions } from '../data';
 import { MapPin, Clock, Search, Filter } from 'lucide-react';
+import { supabase } from '../lib/supabaseClient';
+import { cache } from '../lib/cache';
 
 export default function Jobs() {
   const { t, language, user } = useApp();
@@ -13,36 +15,78 @@ export default function Jobs() {
   const [showFilters, setShowFilters] = useState(false);
   const [allJobs, setAllJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const pageSize = 20;
 
   useEffect(() => {
-    const saved = localStorage.getItem('all_jobs');
-    console.log('Загруженные заказы из localStorage:', saved);
-    
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        // Убираем фильтр по дате для теста
-        setAllJobs(parsed);
-        console.log('Все заказы:', parsed);
-      } catch (e) {
-        console.error('Ошибка загрузки заказов', e);
-      }
-    }
-    setLoading(false);
+    loadJobs();
   }, []);
+
+  const loadJobs = async (reset = true) => {
+    if (reset) {
+      setLoading(true);
+      setAllJobs([]);
+      setPage(0);
+      setHasMore(true);
+    }
+
+    try {
+      if (reset) {
+        const cachedOrders = cache.getOrders();
+        if (cachedOrders && cachedOrders.length <= pageSize) {
+          setAllJobs(cachedOrders);
+          setLoading(false);
+          return;
+        }
+      }
+
+      const from = reset ? 0 : page * pageSize;
+      const to = from + pageSize - 1;
+
+      const { data, error } = await supabase
+        .from('orders')
+        .select('id, title_uz, title_ru, description_uz, description_ru, budget, category, region, district, created_at, responses, author_id')
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (error) {
+        console.error('Ошибка загрузки заказов:', error);
+        setAllJobs([]);
+      } else {
+        if (reset) {
+          setAllJobs(data || []);
+          cache.setOrders(data || []);
+        } else {
+          setAllJobs(prev => [...prev, ...(data || [])]);
+        }
+        setHasMore((data || []).length === pageSize);
+        setPage(prev => prev + 1);
+      }
+    } catch (err) {
+      console.error('Ошибка:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadMore = () => {
+    if (!loading && hasMore) {
+      loadJobs(false);
+    }
+  };
 
   let filteredJobs = allJobs.filter(job => {
     const matchesSearch = !searchQuery ||
-      (language === 'uz' ? job.titleUz : job.titleRu).toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (language === 'uz' ? job.descriptionUz : job.descriptionRu).toLowerCase().includes(searchQuery.toLowerCase());
+      (language === 'uz' ? job.title_uz : job.title_ru).toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (language === 'uz' ? job.description_uz : job.description_ru)?.toLowerCase().includes(searchQuery.toLowerCase());
+    
     const matchesCategory = !categoryFilter || job.category === categoryFilter;
     const matchesRegion = !regionFilter || job.region === regionFilter;
     const matchesDistrict = !districtFilter || job.district === districtFilter;
     
     return matchesSearch && matchesCategory && matchesRegion && matchesDistrict;
   });
-
-  filteredJobs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const formatBudget = (budget: number) => {
     return budget.toLocaleString('ru-RU') + ' ' + t('sum');
@@ -64,7 +108,7 @@ export default function Jobs() {
     return language === 'uz' ? district?.nameUz : district?.nameRu;
   };
 
-  if (loading) {
+  if (loading && allJobs.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -112,7 +156,7 @@ export default function Jobs() {
                 >
                   <option value="">{t('allCategories')}</option>
                   {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>
+                    <option key={cat.id} value={cat.nameUz}>
                       {language === 'uz' ? cat.nameUz : cat.nameRu}
                     </option>
                   ))}
@@ -160,63 +204,83 @@ export default function Jobs() {
         )}
 
         <div className="space-y-4">
-          {filteredJobs.length > 0 ? filteredJobs.map(job => (
-            <Link
-              key={job.id}
-              to={`/job/${job.id}`}
-              className="bg-white rounded-2xl p-6 hover:shadow-lg transition-shadow border border-gray-100 block"
-            >
-              <div className="flex flex-col md:flex-row md:items-center gap-4">
-                <div className="w-full md:w-48 h-32 bg-gray-200 rounded-xl overflow-hidden flex-shrink-0">
-                  <img 
-                    src="/images/job-icon.png" 
-                    alt="job" 
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {language === 'uz' ? job.titleUz : job.titleRu}
-                    </h3>
-                    {job.authorId === user?.id && (
-                      <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-full">
-                        {language === 'uz' ? 'Sizning' : 'Ваш'}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-2">
-                    <span className="flex items-center gap-1">
-                      <MapPin className="w-4 h-4" />
-                      {language === 'uz'
-                        ? regions.find(r => r.id === job.region)?.nameUz
-                        : regions.find(r => r.id === job.region)?.nameRu}
-                      {job.district && (
-                        <span className="text-gray-400 ml-1">
-                          ({getDistrictName(job.region, job.district)})
+          {filteredJobs.length > 0 ? (
+            <>
+              {filteredJobs.map(job => (
+                <Link
+                  key={job.id}
+                  to={`/job/${job.id}`}
+                  className="bg-white rounded-2xl p-6 hover:shadow-lg transition-shadow border border-gray-100 block"
+                >
+                  <div className="flex flex-col md:flex-row md:items-center gap-4">
+                    <div className="w-full md:w-48 h-32 bg-gray-200 rounded-xl overflow-hidden flex-shrink-0">
+                      <img 
+                        src="/images/job-icon.png" 
+                        alt="job" 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {language === 'uz' ? job.title_uz : job.title_ru}
+                        </h3>
+                        {job.author_id === user?.id && (
+                          <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-full">
+                            {language === 'uz' ? 'Sizning' : 'Ваш'}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-2">
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-4 h-4" />
+                          {language === 'uz'
+                            ? regions.find(r => r.id === job.region)?.nameUz
+                            : regions.find(r => r.id === job.region)?.nameRu}
+                          {job.district && (
+                            <span className="text-gray-400 ml-1">
+                              ({getDistrictName(job.region, job.district)})
+                            </span>
+                          )}
                         </span>
-                      )}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
-                      {getTimeAgo(job.createdAt)}
-                    </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          {getTimeAgo(job.created_at)}
+                        </span>
+                      </div>
+                      <p className="text-gray-600 text-sm line-clamp-2">
+                        {language === 'uz' ? job.description_uz : job.description_ru}
+                      </p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-xl font-bold text-green-600 mb-2">
+                        {formatBudget(job.budget)}
+                      </p>
+                      <span className="inline-block bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-sm">
+                        {t('responses')}: {job.responses || 0}
+                      </span>
+                    </div>
                   </div>
-                  <p className="text-gray-600 text-sm line-clamp-2">
-                    {language === 'uz' ? job.descriptionUz : job.descriptionRu}
-                  </p>
+                </Link>
+              ))}
+              
+              {hasMore && (
+                <div className="text-center pt-4">
+                  <button
+                    onClick={loadMore}
+                    disabled={loading}
+                    className="bg-gray-200 text-gray-700 px-6 py-2 rounded-xl hover:bg-gray-300 transition-colors disabled:opacity-50"
+                  >
+                    {loading ? (
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-700 mx-auto"></div>
+                    ) : (
+                      language === 'uz' ? 'Ko\'proq yuklash' : 'Загрузить ещё'
+                    )}
+                  </button>
                 </div>
-                <div className="text-right flex-shrink-0">
-                  <p className="text-xl font-bold text-green-600 mb-2">
-                    {formatBudget(job.budget)}
-                  </p>
-                  <span className="inline-block bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-sm">
-                    {t('responses')}: {job.responses || 0}
-                  </span>
-                </div>
-              </div>
-            </Link>
-          )) : (
+              )}
+            </>
+          ) : (
             <div className="bg-white rounded-2xl p-12 text-center border border-gray-100">
               <p className="text-gray-500 text-lg">{t('noJobs')}</p>
             </div>

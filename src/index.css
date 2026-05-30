@@ -33,3 +33,11 @@ div, section, main, article {
         max-width: 100vw !important;
     }
 }
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0.75rem);
+}
+
+.h-screen {
+  height: 100vh;
+  height: 100dvh; /* dynamic viewport height */
+}

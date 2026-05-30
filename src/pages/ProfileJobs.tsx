@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
+import { supabase } from '../lib/supabaseClient';
 import { MapPin, Clock, ArrowLeft } from 'lucide-react';
 
 export default function ProfileJobs() {
@@ -9,20 +10,34 @@ export default function ProfileJobs() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Загружаем заказы из общего хранилища all_jobs
-    const saved = localStorage.getItem('all_jobs');
-    if (saved) {
-      try {
-        const allJobs = JSON.parse(saved);
-        // Фильтруем только заказы текущего пользователя
-        const userJobs = allJobs.filter((job: any) => job.authorId === user?.id);
-        setMyJobs(userJobs);
-      } catch (e) {
-        console.error('Ошибка загрузки заказов', e);
-      }
+    if (user?.id) {
+      loadMyJobs();
+    } else {
+      setLoading(false);
     }
-    setLoading(false);
   }, [user]);
+
+  const loadMyJobs = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('author_id', user?.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Ошибка загрузки заказов:', error);
+      } else {
+        console.log('Загружено заказов:', data?.length);
+        setMyJobs(data || []);
+      }
+    } catch (err) {
+      console.error('Ошибка:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const formatBudget = (budget: number) => {
     return budget.toLocaleString('ru-RU') + ' ' + (t('sum') || 'сум');
@@ -74,21 +89,19 @@ export default function ProfileJobs() {
                 <div className="flex flex-col md:flex-row md:items-start gap-4">
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      {language === 'uz' ? job.titleUz : job.titleRu}
+                      {language === 'uz' ? job.title_uz : job.title_ru}
                     </h3>
                     <p className="text-gray-600 text-sm line-clamp-2 mb-2">
-                      {language === 'uz' ? job.descriptionUz : job.descriptionRu}
+                      {language === 'uz' ? job.description_uz : job.description_ru}
                     </p>
                     <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
                       <span className="flex items-center gap-1">
                         <MapPin className="w-4 h-4" />
-                        {language === 'uz'
-                          ? job.region
-                          : job.region}
+                        {language === 'uz' ? job.region : job.region}
                       </span>
                       <span className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
-                        {new Date(job.createdAt).toLocaleDateString()}
+                        {new Date(job.created_at).toLocaleDateString()}
                       </span>
                     </div>
                   </div>

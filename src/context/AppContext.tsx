@@ -1,59 +1,174 @@
-import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
-import { Language } from '../i18n/translations';
-import { User } from '../types';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  ReactNode,
+} from 'react';
+
+import { supabase } from '../lib/supabaseClient';
+
+type Language = 'ru' | 'uz';
+
+interface AppUser {
+  id: string;
+  name: string;
+  phone?: string;
+  avatar?: string;
+  role: string;
+  region?: string;
+  district?: string;
+  isVerified?: boolean;
+  isVIP?: boolean;
+  aboutUz?: string;
+  aboutRu?: string;
+  experience?: number;
+  services?: any[];
+  balance?: number;
+}
 
 interface AppContextType {
-  language: Language;
-  setLanguage: (lang: Language) => void;
+  language: 'ru' | 'uz';
+  setLanguage: (lang: 'ru' | 'uz') => void;
   t: (key: string) => string;
-  user: User | null;
-  setUser: (user: User | null) => void;
+  user: AppUser | null;
+  setUser: (user: AppUser | null) => void;
   selectedRegion: string;
   setSelectedRegion: (region: string) => void;
   selectedDistrict: string;
   setSelectedDistrict: (district: string) => void;
   isLoggedIn: boolean;
   setIsLoggedIn: (loggedIn: boolean) => void;
+  refreshUserProfile: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [language, setLanguage] = useState<Language>('ru');
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AppUser | null>(null);
   const [selectedRegion, setSelectedRegion] = useState('tashkent-city');
   const [selectedDistrict, setSelectedDistrict] = useState('chilonzor');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // Загружаем пользователя из localStorage при запуске приложения
-  useEffect(() => {
-    const savedUser = localStorage.getItem('ustatop_user');
-    const savedToken = localStorage.getItem('ustatop_token');
-    if (savedUser && savedToken === 'true') {
-      try {
-        setUser(JSON.parse(savedUser));
-        setIsLoggedIn(true);
-      } catch (e) {
-        console.error('Ошибка загрузки пользователя', e);
+  // Функция загрузки профиля из таблицы users по ID (с автоматическим созданием)
+  const loadUserProfile = useCallback(async (userId: string) => {
+    if (!userId) return null;
+
+    try {
+      // Ищем пользователя
+      let { data: userData, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+
+      // Если пользователь не найден - создаём автоматически
+      if (!userData && !error) {
+        console.log('👤 Пользователь не найден, создаём автоматически...');
+        
+        const { data: newUser, error: insertError } = await supabase
+          .from('users')
+          .insert([{
+            id: userId,
+            name: 'Пользователь',
+            phone: null,
+            role: 'customer',
+            created_at: new Date().toISOString()
+          }])
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error('❌ Ошибка создания пользователя:', insertError);
+          return null;
+        }
+        
+        console.log('✅ Пользователь создан:', newUser);
+        userData = newUser;
+      } else if (error) {
+        console.error('❌ Ошибка загрузки пользователя:', error);
+        return null;
       }
+
+      if (userData) {
+        const appUser: AppUser = {
+          id: userData.id,
+          name: userData.name,
+          phone: userData.phone,
+          avatar: userData.avatar_url,
+          role: userData.role,
+          region: userData.region,
+          district: userData.district,
+          isVerified: userData.is_verified,
+          isVIP: userData.is_vip,
+          aboutUz: userData.about_uz,
+          aboutRu: userData.about_ru,
+          experience: userData.experience,
+          services: userData.services || [],
+          balance: userData.balance,
+        };
+        setUser(appUser);
+        setIsLoggedIn(true);
+        return appUser;
+      }
+    } catch (err) {
+      console.error('❌ Ошибка загрузки профиля:', err);
     }
+    return null;
   }, []);
 
-  // Сохраняем пользователя в localStorage при изменении
-  useEffect(() => {
-    if (isLoggedIn && user) {
-      localStorage.setItem('ustatop_user', JSON.stringify(user));
-      localStorage.setItem('ustatop_token', 'true');
-    } else if (!isLoggedIn) {
-      localStorage.removeItem('ustatop_user');
-      localStorage.removeItem('ustatop_token');
+  // Функция обновления профиля (после редактирования)
+  const refreshUserProfile = useCallback(async () => {
+    const savedSession = localStorage.getItem('user_session');
+    if (savedSession) {
+      try {
+        const session = JSON.parse(savedSession);
+        const userId = session.userId || session.id;
+        if (userId) {
+          await loadUserProfile(userId);
+        }
+      } catch (e) {
+        console.error('Ошибка обновления профиля', e);
+      }
     }
-  }, [isLoggedIn, user]);
+  }, [loadUserProfile]);
+
+  // Загружаем пользователя из localStorage при старте
+  useEffect(() => {
+    const loadUserFromSession = async () => {
+      const savedSession = localStorage.getItem('user_session');
+      
+      if (savedSession) {
+        try {
+          const session = JSON.parse(savedSession);
+          const userId = session.userId || session.id;
+          
+          if (userId) {
+            await loadUserProfile(userId);
+          } else {
+            console.error('В сессии нет ID пользователя');
+            setUser(null);
+            setIsLoggedIn(false);
+          }
+        } catch (e) {
+          console.error('Ошибка загрузки сессии', e);
+          setUser(null);
+          setIsLoggedIn(false);
+        }
+      } else {
+        setUser(null);
+        setIsLoggedIn(false);
+      }
+    };
+
+    loadUserFromSession();
+  }, [loadUserProfile]);
 
   const t = useCallback((key: string): string => {
     const translations: Record<string, Record<Language, string>> = {
       testModeHint: { uz: 'Kod qalqib chiquvchi oynada keladi (test rejimi)', ru: 'Код приходит в всплывающем окне (тестовый режим)' },
-      // Для регистрации
       telegramId: { uz: 'Telegram ID', ru: 'Telegram ID' },
       telegramIdHint: { uz: 'Telegram ID ni qanday bilish mumkin: @userinfobot ga yozing → bot sizning ID yuboradi', ru: 'Как узнать Telegram ID: напишите @userinfobot → бот пришлёт ваш ID' },
       telegramIdRequired: { uz: 'Telegram ID ni kiriting', ru: 'Введите Telegram ID' },
@@ -202,24 +317,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
       jobDetails: { uz: 'Buyurtma tafsilotlari', ru: 'Детали заявки' },
       workTypeLabel: { uz: 'Ish turi', ru: 'Тип работы' },
       areaLabel: { uz: 'Maydon', ru: 'Площадь' },
+      avatarTip: { uz: 'Rasmni yuklash uchun bosing', ru: 'Нажмите на фото, чтобы загрузить аватар' },
+      onlyImages: { uz: 'Faqat rasm fayllari', ru: 'Только изображения' },
+      maxSize: { uz: 'Fayl hajmi 5MB dan oshmasligi kerak', ru: 'Файл не должен превышать 5MB' },
+      add: { uz: 'Qo\'shish', ru: 'Добавить' },
     };
     return translations[key]?.[language] || key;
   }, [language]);
 
   return (
-    <AppContext.Provider value={{
-      language,
-      setLanguage,
-      t,
-      user,
-      setUser,
-      selectedRegion,
-      setSelectedRegion,
-      selectedDistrict,
-      setSelectedDistrict,
-      isLoggedIn,
-      setIsLoggedIn,
-    }}>
+    <AppContext.Provider
+      value={{
+        language,
+        setLanguage,
+        t,
+        user,
+        setUser,
+        selectedRegion,
+        setSelectedRegion,
+        selectedDistrict,
+        setSelectedDistrict,
+        isLoggedIn,
+        setIsLoggedIn,
+        refreshUserProfile,
+      }}
+    >
       {children}
     </AppContext.Provider>
   );

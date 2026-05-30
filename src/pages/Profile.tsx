@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { Phone, MapPin, Star, Briefcase, Crown, CheckCircle, Edit2, Settings, LogOut, Heart, MessageCircle, Clock, Camera, X, Plus, Edit3, Trash2 } from 'lucide-react';
 import { regions } from '../data';
+import { supabase } from '../lib/supabaseClient';
 
 // Компонент для загрузки аватара
 function AvatarUpload({ currentAvatar, onAvatarChange, size = 120 }: { 
@@ -85,17 +86,214 @@ function AvatarUpload({ currentAvatar, onAvatarChange, size = 120 }: {
 export default function Profile() {
   const { t, language, user, setUser, setIsLoggedIn, isLoggedIn } = useApp();
   const [editMode, setEditMode] = useState(false);
-  const [name, setName] = useState(user?.name || '');
-  const [avatar, setAvatar] = useState(user?.avatar || '');
-  const [aboutUz, setAboutUz] = useState(user?.aboutUz || '');
-  const [aboutRu, setAboutRu] = useState(user?.aboutRu || '');
-  const [experience, setExperience] = useState(user?.experience || 0);
-  const [phone, setPhone] = useState(user?.phone || '');
-  const [services, setServices] = useState<any[]>(user?.services || []);
+  const [name, setName] = useState('');
+  const [avatar, setAvatar] = useState('');
+  const [aboutUz, setAboutUz] = useState('');
+  const [aboutRu, setAboutRu] = useState('');
+  const [experience, setExperience] = useState(0);
+  const [phone, setPhone] = useState('');
+  const [services, setServices] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showServiceModal, setShowServiceModal] = useState(false);
   const [editingService, setEditingService] = useState<{ index: number; nameUz: string; nameRu: string; price: number } | null>(null);
   const [newService, setNewService] = useState({ nameUz: '', nameRu: '', price: 0 });
   const navigate = useNavigate();
+
+  // Загружаем данные пользователя из Supabase
+  useEffect(() => {
+    if (!isLoggedIn || !user) {
+      setLoading(false);
+      return;
+    }
+
+    loadUserProfile();
+  }, [user?.id, isLoggedIn]);
+
+  const loadUserProfile = async () => {
+    setLoading(true);
+    try {
+      const { data, error: loadError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (loadError) {
+        console.error('Ошибка загрузки профиля:', loadError);
+      } else if (data) {
+        setName(data.name || user.name || '');
+        setPhone(data.phone || user.phone || '');
+        setAvatar(data.avatar_url || user.avatar || '');
+        setAboutUz(data.about_uz || '');
+        setAboutRu(data.about_ru || '');
+        setExperience(data.experience || 0);
+        setServices(data.services || []);
+        
+        setUser({
+          ...user,
+          name: data.name || user.name,
+          phone: data.phone || user.phone,
+          avatar: data.avatar_url || user.avatar,
+          aboutUz: data.about_uz,
+          aboutRu: data.about_ru,
+          experience: data.experience,
+          services: data.services || [],
+          isVIP: data.is_vip,
+          isVerified: data.is_verified,
+          role: data.role,
+          region: data.region,
+          district: data.district,
+        });
+      }
+    } catch (err) {
+      console.error('Ошибка:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAvatarChange = (avatarUrl: string) => {
+    setAvatar(avatarUrl);
+  };
+
+  const handleSave = async () => {
+    if (!user) return;
+
+    try {
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({
+          name: name,
+          phone: phone,
+          avatar_url: avatar,
+          about_uz: aboutUz,
+          about_ru: aboutRu,
+          experience: experience,
+          services: services,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', user.id);
+
+      if (updateError) {
+        console.error('Ошибка сохранения:', updateError);
+        alert('Ошибка сохранения профиля: ' + updateError.message);
+        return;
+      }
+
+      setUser({ 
+        ...user, 
+        name, 
+        avatar,
+        phone,
+        aboutUz, 
+        aboutRu, 
+        experience,
+        services,
+      });
+      
+      setEditMode(false);
+      alert('Профиль успешно обновлён');
+    } catch (err) {
+      console.error('Ошибка:', err);
+      alert('Произошла ошибка при сохранении');
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('user_session');
+    setUser(null);
+    setIsLoggedIn(false);
+    navigate('/');
+  };
+
+  const addService = async () => {
+    if (newService.nameUz && newService.nameRu && newService.price > 0) {
+      const updatedServices = [...services, { ...newService }];
+      setServices(updatedServices);
+      
+      if (user) {
+        const { error: serviceError } = await supabase
+          .from('users')
+          .update({ services: updatedServices })
+          .eq('id', user.id);
+        
+        if (serviceError) {
+          console.error('Ошибка сохранения услуги:', serviceError);
+          alert('Ошибка сохранения услуги');
+          return;
+        }
+      }
+      
+      setUser({ ...user, services: updatedServices } as any);
+      setNewService({ nameUz: '', nameRu: '', price: 0 });
+      setShowServiceModal(false);
+    }
+  };
+
+  const editService = (index: number) => {
+    const service = services[index];
+    setEditingService({ index, ...service });
+    setShowServiceModal(true);
+  };
+
+  const updateService = async () => {
+    if (editingService) {
+      const updatedServices = [...services];
+      updatedServices[editingService.index] = {
+        nameUz: editingService.nameUz,
+        nameRu: editingService.nameRu,
+        price: editingService.price,
+      };
+      setServices(updatedServices);
+      
+      if (user) {
+        const { error: serviceError } = await supabase
+          .from('users')
+          .update({ services: updatedServices })
+          .eq('id', user.id);
+        
+        if (serviceError) {
+          console.error('Ошибка сохранения услуги:', serviceError);
+          alert('Ошибка сохранения услуги');
+          return;
+        }
+      }
+      
+      setUser({ ...user, services: updatedServices } as any);
+      setEditingService(null);
+      setShowServiceModal(false);
+    }
+  };
+
+  const deleteService = async (index: number) => {
+    const updatedServices = services.filter((_, i) => i !== index);
+    setServices(updatedServices);
+    
+    if (user) {
+      const { error: serviceError } = await supabase
+        .from('users')
+        .update({ services: updatedServices })
+        .eq('id', user.id);
+      
+      if (serviceError) {
+        console.error('Ошибка удаления услуги:', serviceError);
+        alert('Ошибка удаления услуги');
+        return;
+      }
+    }
+    
+    setUser({ ...user, services: updatedServices } as any);
+  };
+
+  const currentRegion = regions.find(r => r.id === user?.region);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   if (!isLoggedIn || !user) {
     return (
@@ -117,72 +315,6 @@ export default function Profile() {
       </div>
     );
   }
-
-  const handleAvatarChange = (avatarUrl: string) => {
-    setAvatar(avatarUrl);
-    if (setUser) {
-      setUser({ ...user, avatar: avatarUrl } as any);
-    }
-  };
-
-  const handleSave = () => {
-    setUser({ 
-      ...user, 
-      name, 
-      avatar,
-      phone,
-      aboutUz, 
-      aboutRu, 
-      experience,
-      services,
-    } as any);
-    setEditMode(false);
-  };
-
-  const handleLogout = () => {
-    setUser(null);
-    setIsLoggedIn(false);
-    navigate('/');
-  };
-
-  const addService = () => {
-    if (newService.nameUz && newService.nameRu && newService.price > 0) {
-      const updatedServices = [...services, { ...newService }];
-      setServices(updatedServices);
-      setUser({ ...user, services: updatedServices } as any);
-      setNewService({ nameUz: '', nameRu: '', price: 0 });
-      setShowServiceModal(false);
-    }
-  };
-
-  const editService = (index: number) => {
-    const service = services[index];
-    setEditingService({ index, ...service });
-    setShowServiceModal(true);
-  };
-
-  const updateService = () => {
-    if (editingService) {
-      const updatedServices = [...services];
-      updatedServices[editingService.index] = {
-        nameUz: editingService.nameUz,
-        nameRu: editingService.nameRu,
-        price: editingService.price,
-      };
-      setServices(updatedServices);
-      setUser({ ...user, services: updatedServices } as any);
-      setEditingService(null);
-      setShowServiceModal(false);
-    }
-  };
-
-  const deleteService = (index: number) => {
-    const updatedServices = services.filter((_, i) => i !== index);
-    setServices(updatedServices);
-    setUser({ ...user, services: updatedServices } as any);
-  };
-
-  const currentRegion = regions.find(r => r.id === user.region);
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -206,14 +338,14 @@ export default function Profile() {
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-3">
-                  <h1 className="text-2xl font-bold text-gray-900">{user.name}</h1>
+                  <h1 className="text-2xl font-bold text-gray-900">{name || user.name}</h1>
                   {user.isVerified && <CheckCircle className="w-6 h-6 text-blue-500" />}
                   {user.isVIP && <Crown className="w-6 h-6 text-yellow-500" />}
                 </div>
                 <div className="flex items-center gap-4 text-gray-500 mt-2 flex-wrap">
                   <span className="flex items-center gap-1">
                     <Phone className="w-4 h-4" />
-                    {user.phone}
+                    {phone || user.phone}
                   </span>
                   <span className="flex items-center gap-1">
                     <MapPin className="w-4 h-4" />
@@ -367,7 +499,7 @@ export default function Profile() {
               )}
             </div>
 
-            {/* Services (for masters) - с возможностью редактирования */}
+            {/* Services (for masters) */}
             {user.role === 'master' && (
               <div className="bg-white rounded-2xl p-6 border border-gray-100">
                 <div className="flex items-center justify-between mb-4">

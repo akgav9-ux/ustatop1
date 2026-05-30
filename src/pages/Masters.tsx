@@ -131,63 +131,69 @@ export default function Masters() {
             const districtName = getDistrictName(master.region, master.district);
             
             return (
-              <Link key={master.id} to={`/master/${master.id}`} className="bg-white rounded-2xl p-6 hover:shadow-lg border block">
+              <div key={master.id} className="bg-white rounded-2xl p-6 hover:shadow-lg border">
                 <div className="flex flex-col md:flex-row gap-6">
-                  {/* Аватар */}
-                  <div className="relative">
+                  {/* Аватар и ссылка на профиль */}
+                  <Link to={`/master/${master.id}`} className="relative block">
                     <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center text-white text-3xl font-bold">
                       {master.name.charAt(0)}
                     </div>
                     {master.isOnline && (
                       <span className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 border-2 border-white rounded-full"></span>
                     )}
-                  </div>
+                  </Link>
 
-                  {/* Информация */}
+                  {/* Информация - ссылка на профиль */}
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-xl font-semibold">{master.name}</h3>
-                      {master.isVerified && <CheckCircle className="w-5 h-5 text-blue-500" />}
-                      {master.isVIP && <Crown className="w-5 h-5 text-yellow-500" />}
-                    </div>
-                    <p className="text-gray-500 mb-2">
-                      {language === 'uz'
-                        ? categories.find(c => c.id === master.category)?.nameUz
-                        : categories.find(c => c.id === master.category)?.nameRu}
-                    </p>
-                    <div className="flex items-center gap-4 text-sm">
-                      <div className="flex items-center gap-1">
-                        <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                        <span>{master.rating}</span>
-                        <span className="text-gray-400">({master.reviews})</span>
+                    <Link to={`/master/${master.id}`} className="block">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-xl font-semibold">{master.name}</h3>
+                        {master.isVerified && <CheckCircle className="w-5 h-5 text-blue-500" />}
+                        {master.isVIP && <Crown className="w-5 h-5 text-yellow-500" />}
                       </div>
-                      <span className="text-gray-400">|</span>
-                      <span>{master.experience} лет</span>
-                      <span className="text-gray-400">|</span>
-                      <span>{master.jobsCompleted} работ</span>
-                    </div>
-                    <div className="flex items-center gap-1 mt-2 text-sm text-gray-500">
-                      <MapPin className="w-4 h-4" />
-                      <span>{regionName}, {districtName}</span>
-                    </div>
-                    <p className="text-gray-600 mt-2 line-clamp-2">
-                      {language === 'uz' ? master.descriptionUz : master.descriptionRu}
-                    </p>
+                      <p className="text-gray-500 mb-2">
+                        {language === 'uz'
+                          ? categories.find(c => c.id === master.category)?.nameUz
+                          : categories.find(c => c.id === master.category)?.nameRu}
+                      </p>
+                      <div className="flex items-center gap-4 text-sm">
+                        <div className="flex items-center gap-1">
+                          <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                          <span>{master.rating}</span>
+                          <span className="text-gray-400">({master.reviews})</span>
+                        </div>
+                        <span className="text-gray-400">|</span>
+                        <span>{master.experience} лет</span>
+                        <span className="text-gray-400">|</span>
+                        <span>{master.jobsCompleted} работ</span>
+                      </div>
+                      <div className="flex items-center gap-1 mt-2 text-sm text-gray-500">
+                        <MapPin className="w-4 h-4" />
+                        <span>{regionName}, {districtName}</span>
+                      </div>
+                      <p className="text-gray-600 mt-2 line-clamp-2">
+                        {language === 'uz' ? master.descriptionUz : master.descriptionRu}
+                      </p>
+                    </Link>
                   </div>
 
-                  {/* Статус */}
+                  {/* Статус и кнопка Написать */}
                   <div className="flex flex-col gap-2">
                     <span className={`px-3 py-1 rounded-full text-sm text-center ${
                       master.isOnline ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-500'
                     }`}>
-                      {master.isOnline ? 'Онлайн' : 'Недавно'}
+                      {master.isOnline ? t('online') : t('recently')}
                     </span>
-                    <span className="bg-blue-600 text-white px-6 py-2 rounded-xl text-center hover:bg-blue-700">
-                      Написать
-                    </span>
+                    <Link
+                      to={`/chat/${master.id}`}
+                      className="bg-blue-600 text-white px-6 py-2 rounded-xl text-center hover:bg-blue-700 transition-colors block"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {t('write')}
+                    </Link>
                   </div>
                 </div>
-              </Link>
+              </div>
             );
           }) : (
             <div className="bg-white rounded-2xl p-12 text-center border">

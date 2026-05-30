@@ -3,25 +3,71 @@ import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { categories, regions } from '../data';
 import { ChevronRight, Star, Clock, MapPin, Crown, Trophy, ArrowUpRight } from 'lucide-react';
+import { supabase } from '../lib/supabaseClient';
+import { cache } from '../lib/cache';
 
 export default function Home() {
-  const { t, language } = useApp();
+  const { t, language, user, isLoggedIn } = useApp();
   const [recentJobs, setRecentJobs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    const saved = localStorage.getItem('all_jobs');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        const sorted = [...parsed].sort((a, b) => 
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-        setRecentJobs(sorted.slice(0, 10));
-      } catch (e) {
-        console.error('Ошибка загрузки заказов', e);
-      }
+    loadRecentJobs();
+    if (isLoggedIn && user?.id) {
+      loadUnreadCount();
     }
   }, []);
+
+const loadRecentJobs = async () => {
+  setLoading(true);
+  try {
+    const cachedOrders = cache.getOrders();
+    if (cachedOrders) {
+      console.log('Загрузка из кэша');
+      setRecentJobs(cachedOrders.slice(0, 5));  // ← 5 вместо 10
+      setLoading(false);
+      return;
+    }
+
+    console.log('Загрузка из Supabase...');
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(5);  // ← 5 вместо 20
+
+    if (error) {
+      console.error('Ошибка загрузки заказов:', error);
+      setRecentJobs([]);
+    } else {
+      console.log('Загружено заказов из Supabase:', data?.length || 0);
+      cache.setOrders(data || []);
+      setRecentJobs((data || []).slice(0, 5));
+    }
+  } catch (err) {
+    console.error('Ошибка:', err);
+    setRecentJobs([]);
+  } finally {
+    setLoading(false);
+  }
+};
+
+  const loadUnreadCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user?.id)
+        .eq('is_read', false);
+
+      if (!error && count) {
+        setUnreadCount(count);
+      }
+    } catch (err) {
+      console.error('Ошибка загрузки уведомлений:', err);
+    }
+  };
 
   const formatBudget = (budget: number) => {
     return budget.toLocaleString('ru-RU') + ' ' + t('sum');
@@ -42,6 +88,14 @@ export default function Home() {
     const district = region?.districts.find(d => d.id === districtId);
     return language === 'uz' ? district?.nameUz : district?.nameRu;
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -91,7 +145,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Categories - теперь ведут на заказы по категории */}
+      {/* Categories */}
       <section className="max-w-7xl mx-auto px-4 py-6 sm:py-12">
         <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mb-3 sm:mb-6 lg:mb-8">
           {language === 'uz' ? 'Kategoriyalar' : 'Категории'}
@@ -129,7 +183,7 @@ export default function Home() {
                 </div>
                 <div className="flex-1">
                   <h3 className="text-sm sm:text-lg font-semibold text-gray-900 mb-0.5 sm:mb-2">
-                    {language === 'uz' ? job.titleUz : job.titleRu}
+                    {language === 'uz' ? job.title_uz : job.title_ru}
                   </h3>
                   <div className="flex flex-wrap items-center gap-1 sm:gap-4 text-xs text-gray-500 mb-0.5 sm:mb-2">
                     <span className="flex items-center gap-0.5 sm:gap-1">
@@ -139,11 +193,11 @@ export default function Home() {
                     </span>
                     <span className="flex items-center gap-0.5 sm:gap-1">
                       <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
-                      {getTimeAgo(job.createdAt)}
+                      {getTimeAgo(job.created_at)}
                     </span>
                   </div>
                   <p className="text-gray-600 text-xs sm:text-sm line-clamp-2 hidden sm:block">
-                    {language === 'uz' ? job.descriptionUz : job.descriptionRu}
+                    {language === 'uz' ? job.description_uz : job.description_ru}
                   </p>
                 </div>
                 <div className="text-left md:text-right mt-2 md:mt-0">

@@ -1,274 +1,257 @@
-import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import { User, Phone, ArrowLeft, Send, Briefcase, UserCheck } from 'lucide-react';
+import { supabase } from '../lib/supabaseClient';
+import { Eye, EyeOff, Phone, User, Lock } from 'lucide-react';
 
 export default function Register() {
-  const { t, setUser, setIsLoggedIn, language, isLoggedIn } = useApp();
-  const [step, setStep] = useState<'form' | 'code'>('form');
-  const [phone, setPhone] = useState('');
+  const { t, language, setUser, setIsLoggedIn } = useApp();
+  const navigate = useNavigate();
   const [name, setName] = useState('');
-  const [role, setRole] = useState<'customer' | 'master'>('customer');
-  const [code, setCode] = useState('');
-  const [generatedCode, setGeneratedCode] = useState('');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [role, setRole] = useState('customer');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const navigate = useNavigate();
 
-  useEffect(() => {
-    if (isLoggedIn) navigate('/');
-  }, [isLoggedIn, navigate]);
-
-  const isValidUzbekPhone = (phoneNumber: string) => {
+  const validatePhone = (phone: string) => {
     const phoneRegex = /^\+998[0-9]{9}$/;
-    return phoneRegex.test(phoneNumber);
+    return phoneRegex.test(phone);
   };
 
-  const handleSendCode = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
 
-    if (!name || name.length < 2) {
-      setError(t('nameRequired'));
+    if (!name.trim()) {
+      setError(language === 'uz' ? 'Ismni kiriting' : 'Введите имя');
       return;
     }
 
-    if (!phone || phone.length < 9) {
-      setError(t('phoneRequired'));
+    if (!validatePhone(phone)) {
+      setError(language === 'uz' ? 'Telefon raqam +998XXXXXXXXX formatida bo\'lishi kerak' : 'Телефон должен быть в формате +998XXXXXXXXX');
       return;
     }
 
-    if (!isValidUzbekPhone(phone)) {
-      setError(t('invalidPhone'));
+    if (password.length < 4) {
+      setError(language === 'uz' ? 'Parol kamida 4 belgi bo\'lishi kerak' : 'Пароль должен быть не менее 4 символов');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError(language === 'uz' ? 'Parollar mos kelmadi' : 'Пароли не совпадают');
       return;
     }
 
     setLoading(true);
-    setError('');
 
-    // Генерация кода
-    const randomCode = Math.floor(100000 + Math.random() * 900000).toString();
-    setGeneratedCode(randomCode);
+    try {
+      // Проверяем, существует ли пользователь с таким телефоном
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('phone')
+        .eq('phone', phone)
+        .maybeSingle();
 
-    // Сохранение в localStorage
-    localStorage.setItem('reg_name', name);
-    localStorage.setItem('reg_phone', phone);
-    localStorage.setItem('reg_role', role);
-    localStorage.setItem('reg_code', randomCode);
-    localStorage.setItem('reg_code_expires', (Date.now() + 5 * 60 * 1000).toString());
+      if (existingUser) {
+        setError(language === 'uz' ? 'Bu telefon raqam allaqachon ro\'yxatdan o\'tgan' : 'Этот номер телефона уже зарегистрирован');
+        setLoading(false);
+        return;
+      }
 
-    // Тестовый вывод (потом заменим на реальную SMS)
-    alert(`Ваш код подтверждения: ${randomCode}`);
+      // Генерируем случайный ID
+      const userId = Date.now().toString();
 
-    setStep('code');
-    setLoading(false);
-  };
+      // Создаём пользователя в Supabase (с возвратом данных)
+      const { data: newUser, error: insertError } = await supabase
+        .from('users')
+        .insert([{
+          id: userId,
+          name: name,
+          phone: phone,
+          password: password,
+          role: role,
+          created_at: new Date().toISOString()
+        }])
+        .select()
+        .single();
 
-  const handleVerify = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const savedCode = localStorage.getItem('reg_code');
-    const expires = localStorage.getItem('reg_code_expires');
-    const savedName = localStorage.getItem('reg_name');
-    const savedPhone = localStorage.getItem('reg_phone');
-    const savedRole = localStorage.getItem('reg_role') as 'customer' | 'master';
-
-    if (!savedCode) {
-      setError(t('codeNotFound'));
-      return;
-    }
-
-    if (Date.now() > parseInt(expires || '0')) {
-      setError(t('codeExpired'));
-      localStorage.removeItem('reg_code');
-      localStorage.removeItem('reg_code_expires');
-      return;
-    }
-
-    if (code === savedCode) {
-      setUser({
-        id: 'user_' + Date.now(),
-        name: savedName || name,
-        phone: savedPhone || phone,
-        role: savedRole || role,
-        avatar: '',
-        region: 'tashkent-city',
-        district: 'chilonzor',
-        isVerified: false,
-        isVIP: false,
-        balance: 0,
-        ...(savedRole === 'master' && {
-          aboutUz: '',
-          aboutRu: '',
-          experience: 0,
-          jobsCompleted: 0,
-          rating: 0,
-          reviews: 0,
-          services: [],
-        }),
-      });
-      setIsLoggedIn(true);
-
-      // Очистка после успешной регистрации
-      localStorage.removeItem('reg_name');
-      localStorage.removeItem('reg_phone');
-      localStorage.removeItem('reg_role');
-      localStorage.removeItem('reg_code');
-      localStorage.removeItem('reg_code_expires');
-
-      navigate('/');
-    } else {
-      setError(t('wrongCode'));
+      if (insertError) {
+        console.error('Ошибка регистрации:', insertError);
+        if (insertError.code === '23505') {
+          setError(language === 'uz' ? 'Bu telefon raqam allaqachon ro\'yxatdan o\'tgan' : 'Этот номер телефона уже зарегистрирован');
+        } else {
+          setError(language === 'uz' ? 'Ro\'yxatdan o\'tishda xatolik' : 'Ошибка регистрации');
+        }
+      } else {
+        // Сохраняем в localStorage сессию
+        const session = {
+          id: newUser.id,
+          userId: newUser.id,
+          name: newUser.name,
+          phone: newUser.phone,
+          role: newUser.role
+        };
+        localStorage.setItem('user_session', JSON.stringify(session));
+        
+        // Обновляем AppContext
+        setUser({
+          id: newUser.id,
+          name: newUser.name,
+          phone: newUser.phone,
+          role: newUser.role
+        });
+        setIsLoggedIn(true);
+        
+        navigate('/');
+      }
+    } catch (err) {
+      console.error('Ошибка:', err);
+      setError(language === 'uz' ? 'Ulanish xatoligi' : 'Ошибка соединения');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
-      <div className="max-w-md w-full">
-        <div className="bg-white rounded-3xl shadow-xl p-8">
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <span className="text-white font-bold text-2xl">U</span>
+      <div className="max-w-md w-full bg-white rounded-3xl shadow-lg p-8">
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-gray-900">
+            {language === 'uz' ? "Ro'yxatdan o'tish" : 'Регистрация'}
+          </h1>
+          <p className="text-gray-500 mt-2">
+            {language === 'uz' ? 'Yangi akkaunt yaratish' : 'Создайте новый аккаунт'}
+          </p>
+        </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-xl text-sm">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {language === 'uz' ? 'Ismingiz' : 'Ваше имя'}
+            </label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder={language === 'uz' ? 'Ismingizni kiriting' : 'Введите ваше имя'}
+              />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">{t('register')}</h1>
-            <p className="text-gray-500 text-sm mt-1">{t('onlyUzbekPhone')}</p>
           </div>
 
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
-              <p className="text-red-600 text-sm text-center">{error}</p>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {language === 'uz' ? 'Telefon raqam' : 'Номер телефона'}
+            </label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="+998 __ ___ __ __"
+              />
             </div>
-          )}
+          </div>
 
-          {step === 'form' ? (
-            <form onSubmit={handleSendCode} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('name')} <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder={t('namePlaceholder')}
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('phone')} <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="tel"
-                    placeholder="+998 90 123 45 67"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <p className="text-xs text-gray-400 mt-1">{t('onlyUzbekPhone')}</p>
-              </div>
-
-              {/* Выбор роли */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {language === 'uz' ? 'Kim siz?' : 'Кто вы?'} <span className="text-red-500">*</span>
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setRole('customer')}
-                    className={`p-4 rounded-xl border-2 text-center transition-all ${
-                      role === 'customer'
-                        ? 'border-blue-600 bg-blue-50 text-blue-600'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <UserCheck className="w-8 h-8 mx-auto mb-2" />
-                    <span className="text-sm font-medium">{t('asCustomer')}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setRole('master')}
-                    className={`p-4 rounded-xl border-2 text-center transition-all ${
-                      role === 'master'
-                        ? 'border-blue-600 bg-blue-50 text-blue-600'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <Briefcase className="w-8 h-8 mx-auto mb-2" />
-                    <span className="text-sm font-medium">{t('asMaster')}</span>
-                  </button>
-                </div>
-              </div>
-
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {language === 'uz' ? 'Parol' : 'Пароль'}
+            </label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder={language === 'uz' ? 'Parolni kiriting' : 'Введите пароль'}
+              />
               <button
-                type="submit"
-                disabled={loading || phone.length < 9 || name.length < 2}
-                className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2"
               >
-                {loading ? t('loading') : (
-                  <>
-                    <Send className="w-4 h-4" />
-                    {t('sendCode')}
-                  </>
-                )}
+                {showPassword ? <EyeOff className="w-5 h-5 text-gray-400" /> : <Eye className="w-5 h-5 text-gray-400" />}
               </button>
-            </form>
-          ) : (
-            <form onSubmit={handleVerify} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('verifyCode')}
-                </label>
-                <input
-                  type="text"
-                  placeholder={t('codePlaceholder')}
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-2xl tracking-widest"
-                  maxLength={6}
-                  autoFocus
-                />
-                <p className="text-sm text-gray-500 mt-2 text-center">
-                  Код отправлен на номер {phone}
-                </p>
-              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {language === 'uz' ? 'Parolni tasdiqlang' : 'Подтвердите пароль'}
+            </label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder={language === 'uz' ? 'Parolni qayta kiriting' : 'Повторите пароль'}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {language === 'uz' ? 'Siz kimsiz?' : 'Кто вы?'}
+            </label>
+            <div className="grid grid-cols-2 gap-3">
               <button
-                type="submit"
-                disabled={loading || code.length < 4}
-                className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50"
+                type="button"
+                onClick={() => setRole('customer')}
+                className={`py-3 rounded-xl font-semibold transition-colors ${
+                  role === 'customer'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
               >
-                {loading ? t('loading') : t('continue')}
+                {language === 'uz' ? 'Buyurtmachi' : 'Заказчик'}
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setStep('form');
-                  setCode('');
-                  setError('');
-                }}
-                className="w-full text-blue-600 hover:text-blue-700 font-medium flex items-center justify-center gap-2"
+                onClick={() => setRole('master')}
+                className={`py-3 rounded-xl font-semibold transition-colors ${
+                  role === 'master'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
               >
-                <ArrowLeft className="w-4 h-4" />
-                {t('back')}
+                {language === 'uz' ? 'Usta' : 'Мастер'}
               </button>
-            </form>
-          )}
-
-          <div className="mt-8 text-center">
-            <p className="text-gray-500">
-              {t('haveAccount')}{' '}
-              <Link to="/login" className="text-blue-600 hover:text-blue-700 font-medium">
-                {t('login')}
-              </Link>
-            </p>
+            </div>
           </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50"
+          >
+            {loading ? (language === 'uz' ? 'Ro\'yxatdan o\'tish...' : 'Регистрация...') : (language === 'uz' ? "Ro'yxatdan o'tish" : 'Зарегистрироваться')}
+          </button>
+        </form>
+
+        <div className="text-center mt-6">
+          <p className="text-gray-600">
+            {language === 'uz' ? 'Akkauntingiz bormi?' : 'Уже есть аккаунт?'}
+            {' '}
+            <Link to="/login" className="text-blue-600 hover:text-blue-700 font-semibold">
+              {language === 'uz' ? 'Kiring' : 'Войдите'}
+            </Link>
+          </p>
         </div>
       </div>
     </div>

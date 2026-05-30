@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { categories, regions } from '../data';
 import { ArrowLeft } from 'lucide-react';
+import { supabase } from '../lib/supabaseClient';
+import { cache } from '../lib/cache';
 
 export default function CreateJob() {
   const { t, language, isLoggedIn, user, selectedRegion, setSelectedRegion, selectedDistrict, setSelectedDistrict } = useApp();
@@ -17,47 +19,66 @@ export default function CreateJob() {
 
   const currentRegion = regions.find(r => r.id === selectedRegion);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (title.trim() && description.trim() && category && budget) {
-      setLoading(true);
+    
+    if (!user) {
+      alert('Пожалуйста, войдите в систему');
+      navigate('/login');
+      return;
+    }
 
-      // Создаём объект заказа
-      const newJob = {
-        id: 'job_' + Date.now(),
-        titleUz: title,
-        titleRu: title,
-        descriptionUz: description,
-        descriptionRu: description,
+    if (!title.trim() || !description.trim() || !category || !budget) {
+      alert('Пожалуйста, заполните все обязательные поля');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const newOrder = {
+        author_id: user?.id,
+        author_name: user?.name || 'Аноним',
+        title_uz: title,
+        title_ru: title,
+        description_uz: description,
+        description_ru: description,
         budget: parseInt(budget) || 0,
         category: category,
         region: selectedRegion,
         district: selectedDistrict,
-        area: area ? parseInt(area) : undefined,
-        deadline: deadline || undefined,
-        createdAt: new Date().toISOString(),
-        responses: 0,
-        images: [],
+        area: area ? parseInt(area) : null,
+        deadline: deadline || null,
         status: 'open',
-        authorId: user?.id || 'unknown',
-        authorName: user?.name || 'Пользователь',
+        responses: 0,
+        created_at: new Date().toISOString()
       };
+      
+      console.log('Сохраняем заказ в Supabase (таблица orders):', newOrder);
 
-      console.log('Сохраняем заказ:', newJob);
+      const { data, error } = await supabase
+        .from('orders')
+        .insert([newOrder])
+        .select();
 
-      // Сохраняем в ОБЩЕЕ хранилище all_jobs (видят все пользователи)
-      const existingJobs = JSON.parse(localStorage.getItem('all_jobs') || '[]');
-      existingJobs.unshift(newJob);
-      localStorage.setItem('all_jobs', JSON.stringify(existingJobs));
-
-      // Проверяем, что сохранилось
-      const saved = localStorage.getItem('all_jobs');
-      console.log('Сохранённые заказы:', saved);
-
-      setTimeout(() => {
+      if (error) {
+        console.error('Ошибка при сохранении заказа:', error);
+        alert(`Ошибка: ${error.message}`);
         setLoading(false);
-        navigate('/jobs');
-      }, 500);
+        return;
+      }
+
+      console.log('Заказ сохранён:', data);
+      
+      // Очищаем кэш после создания нового заказа
+      cache.clearOrders();
+      
+      setLoading(false);
+      navigate('/jobs');
+    } catch (err: any) {
+      console.error('Ошибка:', err);
+      alert(`Ошибка: ${err.message}`);
+      setLoading(false);
     }
   };
 
@@ -137,7 +158,7 @@ export default function CreateJob() {
               >
                 <option value="">{t('selectCategory')}</option>
                 {categories.map(cat => (
-                  <option key={cat.id} value={cat.id}>
+                  <option key={cat.id} value={cat.nameUz}>
                     {language === 'uz' ? cat.nameUz : cat.nameRu}
                   </option>
                 ))}
@@ -154,7 +175,9 @@ export default function CreateJob() {
                   onChange={(e) => {
                     setSelectedRegion(e.target.value);
                     const region = regions.find(r => r.id === e.target.value);
-                    if (region) setSelectedDistrict(region.districts[0].id);
+                    if (region && region.districts.length > 0) {
+                      setSelectedDistrict(region.districts[0].id);
+                    }
                   }}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required

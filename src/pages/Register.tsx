@@ -75,7 +75,7 @@ export default function Register() {
           role: role,
           created_at: new Date().toISOString()
         }])
-        .select()
+        .select('id, name, phone, role')
         .single();
 
       if (insertError) {

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { categories, regions } from '../data';
-import { MapPin, Clock, Search, Filter } from 'lucide-react';
+import { MapPin, Clock, Search, Filter, Briefcase } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { cache } from '../lib/cache';
 

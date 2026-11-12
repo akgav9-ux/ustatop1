@@ -1,89 +1,50 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Briefcase, Users, PlusCircle } from 'lucide-react';
+import { Home, Briefcase, Users, Plus, UserRound } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 export default function BottomNav() {
   const location = useLocation();
-  const { user, isLoggedIn } = useApp();
+  const { user, isLoggedIn, language } = useApp();
+  const labels = language === 'uz'
+    ? { home: 'Bosh sahifa', masters: 'Ustalar', create: 'Buyurtma', jobs: 'Buyurtmalar', profile: 'Profil' }
+    : { home: 'Главная', masters: 'Мастера', create: 'Заказ', jobs: 'Заказы', profile: 'Профиль' };
 
-  const isActive = (path: string) => {
-    if (path === '/' && location.pathname === '/') return true;
-    if (path !== '/' && location.pathname.startsWith(path)) return true;
-    return false;
-  };
+  const isActive = (path: string) => path === '/'
+    ? location.pathname === '/'
+    : location.pathname.startsWith(path);
+
+  const items = [
+    { to: '/', label: labels.home, Icon: Home },
+    { to: '/masters', label: labels.masters, Icon: Users },
+    { to: '/jobs', label: labels.jobs, Icon: Briefcase },
+    { to: '/profile', label: labels.profile, Icon: UserRound },
+  ];
 
   return (
     <>
-      <div className="h-16 sm:hidden"></div>
-      
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg sm:hidden z-50">
-        <div className="flex justify-around items-center py-2 px-2">
-          {/* Главная */}
-          <Link
-            to="/"
-            className={`flex flex-col items-center gap-1 px-3 py-1 rounded-lg transition-colors ${
-              isActive('/') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <Home className="w-5 h-5" />
-            <span className="text-[11px] font-medium">Главная</span>
+      <div className="h-20 sm:hidden" />
+      <nav aria-label={language === 'uz' ? 'Pastki navigatsiya' : 'Нижняя навигация'} className="safe-bottom fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white/95 shadow-[0_-8px_28px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:hidden">
+        <div className="mx-auto flex max-w-lg items-end justify-around px-2 pb-1 pt-2">
+          {items.slice(0, 2).map(({ to, label, Icon }) => (
+            <Link key={to} to={to} aria-current={isActive(to) ? 'page' : undefined} className={`flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl px-1 py-1.5 text-[10px] font-semibold transition ${isActive(to) ? 'text-blue-700' : 'text-slate-500'}`}>
+              <Icon className="h-5 w-5" strokeWidth={isActive(to) ? 2.6 : 2} />
+              <span>{label}</span>
+            </Link>
+          ))}
+          <Link to="/create-job" className="flex min-w-0 flex-1 -translate-y-3 flex-col items-center gap-1 text-[10px] font-bold text-orange-600">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-500/30 ring-4 ring-white"><Plus className="h-6 w-6" strokeWidth={2.8} /></span>
+            <span>{labels.create}</span>
           </Link>
-
-          {/* Мастера */}
-          <Link
-            to="/masters"
-            className={`flex flex-col items-center gap-1 px-3 py-1 rounded-lg transition-colors ${
-              isActive('/masters') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <Users className="w-5 h-5" />
-            <span className="text-[11px] font-medium">Мастера</span>
-          </Link>
-
-          {/* Создать заказ */}
-          <Link
-            to="/create-job"
-            className="flex flex-col items-center justify-center -mt-6"
-          >
-            <div className="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-600/30">
-              <PlusCircle className="w-7 h-7 text-white" />
-            </div>
-            <span className="text-[10px] font-medium text-blue-600 mt-1">Создать</span>
-          </Link>
-
-          {/* Заказы */}
-          <Link
-            to="/jobs"
-            className={`flex flex-col items-center gap-1 px-3 py-1 rounded-lg transition-colors ${
-              isActive('/jobs') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <Briefcase className="w-5 h-5" />
-            <span className="text-[11px] font-medium">Заказы</span>
-          </Link>
-
-          {/* Профиль - с фото или иконкой */}
-          <Link
-            to="/profile"
-            className={`flex flex-col items-center gap-1 px-3 py-1 rounded-lg transition-colors ${
-              isActive('/profile') ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {isLoggedIn && user?.avatar ? (
-              <img 
-                src={user.avatar} 
-                alt="Profile" 
-                className="w-5 h-5 rounded-full object-cover"
-              />
-            ) : (
-              <div className="w-5 h-5 bg-gray-300 rounded-full flex items-center justify-center text-xs text-gray-600">
-                {user?.name?.charAt(0) || '?'}
-              </div>
-            )}
-            <span className="text-[11px] font-medium">Профиль</span>
-          </Link>
+          {items.slice(2).map(({ to, label, Icon }) => (
+            <Link key={to} to={to} aria-current={isActive(to) ? 'page' : undefined} className={`flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl px-1 py-1.5 text-[10px] font-semibold transition ${isActive(to) ? 'text-blue-700' : 'text-slate-500'}`}>
+              {to === '/profile' && isLoggedIn && user?.avatar
+                ? <img src={user.avatar} alt="" className="h-5 w-5 rounded-full object-cover" />
+                : <Icon className="h-5 w-5" strokeWidth={isActive(to) ? 2.6 : 2} />}
+              <span>{label}</span>
+            </Link>
+          ))}
         </div>
-      </div>
+      </nav>
     </>
   );
 }

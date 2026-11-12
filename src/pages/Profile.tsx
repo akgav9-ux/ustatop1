@@ -385,12 +385,12 @@ export default function Profile() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-white rounded-2xl p-6 border border-gray-100 text-center">
               <Star className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-gray-900">{user.rating || 4.9}</p>
+              <p className="text-2xl font-bold text-gray-900">{user.rating != null ? Number(user.rating).toFixed(1) : '—'}</p>
               <p className="text-sm text-gray-500">{t('rating')}</p>
             </div>
             <div className="bg-white rounded-2xl p-6 border border-gray-100 text-center">
               <Briefcase className="w-8 h-8 text-blue-500 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-gray-900">{user.jobsCompleted || 0}</p>
+              <p className="text-2xl font-bold text-gray-900">{user.jobsCompleted ?? '—'}</p>
               <p className="text-sm text-gray-500">{t('completedJobs')}</p>
             </div>
             <div className="bg-white rounded-2xl p-6 border border-gray-100 text-center">
@@ -400,7 +400,7 @@ export default function Profile() {
             </div>
             <div className="bg-white rounded-2xl p-6 border border-gray-100 text-center">
               <Heart className="w-8 h-8 text-red-500 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-gray-900">{user.favoritesCount || 0}</p>
+              <p className="text-2xl font-bold text-gray-900">{user.favoritesCount ?? '—'}</p>
               <p className="text-sm text-gray-500">{t('favorites')}</p>
             </div>
           </div>
@@ -572,10 +572,6 @@ export default function Profile() {
                 <Link to="/profile/responses" className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl transition-colors">
                   <MessageCircle className="w-5 h-5 text-gray-400" />
                   <span>{t('myResponses')}</span>
-                </Link>
-                <Link to="/favorites" className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl transition-colors">
-                  <Heart className="w-5 h-5 text-gray-400" />
-                  <span>{t('favorites')}</span>
                 </Link>
               </nav>
             </div>

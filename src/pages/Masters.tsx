@@ -208,7 +208,7 @@ export default function Masters() {
                         {master.jobs_completed != null && <span>{master.jobs_completed} {language === 'uz' ? 'ish' : 'работ'}</span>}
                         {!master.rating && !master.reviews && master.experience == null && master.jobs_completed == null && <span>{language === 'uz' ? 'Yangi profil' : 'Новый профиль'}</span>}
                       </div>
-                      <p className="mt-2 flex items-center gap-1 text-xs text-slate-500"><MapPin className="h-3.5 w-3.5 shrink-0" />{getRegionName(master.region)}, {getDistrictName(master.region, master.district)}</p>
+                      <p className="mt-2 flex items-center gap-1 text-xs text-slate-500"><MapPin className="h-3.5 w-3.5 shrink-0" />{[getRegionName(master.region), getDistrictName(master.region, master.district)].filter(Boolean).join(', ') || (language === 'uz' ? 'Hudud ko‘rsatilmagan' : 'Регион не указан')}</p>
                     </div>
                   </div>
                   {description && <p className="mt-4 line-clamp-2 text-sm leading-6 text-slate-600">{description}</p>}

@@ -256,7 +256,7 @@ export default function Job() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-slate-50 py-6 sm:py-10">
       <div className="max-w-4xl mx-auto px-4">
         <button
           onClick={() => navigate(-1)}

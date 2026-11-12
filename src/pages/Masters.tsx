@@ -41,8 +41,9 @@ export default function Masters() {
       setLoading(true);
       setLoadError(false);
       const { data, error } = await supabase
-        .from('masters')
+        .from('users')
         .select('*')
+        .eq('role', 'master')
         .order('created_at', { ascending: false });
 
       if (!active) return;

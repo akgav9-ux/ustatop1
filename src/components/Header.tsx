@@ -70,7 +70,7 @@ export default function Header() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) navigate(`/masters?search=${searchQuery}`);
+    if (searchQuery.trim()) navigate(`/masters?search=${encodeURIComponent(searchQuery.trim())}`);
   };
 
   return (
@@ -171,7 +171,7 @@ export default function Header() {
             <Link to="/" className="block py-2 px-3 hover:bg-gray-100 rounded-lg" onClick={() => setMenuOpen(false)}>{t('home')}</Link>
             <Link to="/jobs" className="block py-2 px-3 hover:bg-gray-100 rounded-lg" onClick={() => setMenuOpen(false)}>{t('jobs')}</Link>
             <Link to="/masters" className="block py-2 px-3 hover:bg-gray-100 rounded-lg" onClick={() => setMenuOpen(false)}>{t('masters')}</Link>
-            <Link to="/favorites" className="block py-2 px-3 hover:bg-gray-100 rounded-lg" onClick={() => setMenuOpen(false)}>{t('favorites')}</Link>
+            {isLoggedIn ? <Link to="/profile" className="block py-2 px-3 hover:bg-gray-100 rounded-lg" onClick={() => setMenuOpen(false)}>{t('profile')}</Link> : <Link to="/login" className="block py-2 px-3 hover:bg-gray-100 rounded-lg" onClick={() => setMenuOpen(false)}>{t('login')}</Link> }
             <Link to="/create-job" className="block py-2 px-3 bg-blue-600 text-white rounded-lg text-center mt-3" onClick={() => setMenuOpen(false)}>{t('createJob')}</Link>
           </nav>
         </div>

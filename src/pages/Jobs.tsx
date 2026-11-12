@@ -24,8 +24,8 @@ export default function Jobs() {
   }, []);
 
   const loadJobs = async (reset = true) => {
+    setLoading(true);
     if (reset) {
-      setLoading(true);
       setAllJobs([]);
       setPage(0);
       setHasMore(true);
@@ -43,7 +43,7 @@ export default function Jobs() {
 
       if (error) {
         console.error('Ошибка загрузки заказов:', error);
-        setAllJobs([]);
+        if (reset) setAllJobs([]);
       } else {
         if (reset) {
           setAllJobs(data || []);

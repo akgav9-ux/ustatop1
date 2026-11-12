@@ -56,8 +56,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   });
   const [user, setUser] = useState<AppUser | null>(null);
-  const [selectedRegion, setSelectedRegion] = useState('tashkent-city');
-  const [selectedDistrict, setSelectedDistrict] = useState('chilonzor');
+  const [selectedRegion, setSelectedRegion] = useState(() => {
+    try { return localStorage.getItem('ustatop_region') || 'tashkent-city'; } catch { return 'tashkent-city'; }
+  });
+  const [selectedDistrict, setSelectedDistrict] = useState(() => {
+    try { return localStorage.getItem('ustatop_district') || 'chilonzor'; } catch { return 'chilonzor'; }
+  });
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
@@ -67,6 +71,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // Language selection remains available for the current session.
     }
   }, [language]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('ustatop_region', selectedRegion);
+      localStorage.setItem('ustatop_district', selectedDistrict);
+    } catch {
+      // Location filters remain usable for the current session.
+    }
+  }, [selectedRegion, selectedDistrict]);
 
   // Restore an existing profile for the legacy browser session
   const loadUserProfile = useCallback(async (userId: string) => {

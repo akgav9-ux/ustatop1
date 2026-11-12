@@ -33,7 +33,7 @@ export default function Job() {
     if (id) {
       loadJob();
     }
-  }, [id]);
+  }, [id, user?.id]);
 
   const loadJob = async () => {
     setLoading(true);

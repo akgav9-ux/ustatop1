@@ -3,7 +3,6 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { categories, regions } from '../data';
 import { Star, MapPin, Crown, CheckCircle, Search, Filter, UserRound } from 'lucide-react';
-import RegionFilter from '../components/RegionFilter';
 import { supabase } from '../lib/supabaseClient';
 
 type MasterRecord = {
@@ -26,10 +25,12 @@ type MasterRecord = {
 };
 
 export default function Masters() {
-  const { t, language, selectedRegion, selectedDistrict } = useApp();
+  const { t, language } = useApp();
   const [searchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [categoryFilter, setCategoryFilter] = useState(searchParams.get('category') || '');
+  const [regionFilter, setRegionFilter] = useState('');
+  const [districtFilter, setDistrictFilter] = useState('');
   const [sortBy, setSortBy] = useState('rating');
   const [showFilters, setShowFilters] = useState(false);
   const [masters, setMasters] = useState<MasterRecord[]>([]);
@@ -69,9 +70,10 @@ export default function Masters() {
       const matchesSearch = !query ||
         (master.name || '').toLocaleLowerCase().includes(query) ||
         (description || '').toLocaleLowerCase().includes(query) || (master.services || []).some(service => ((language === 'uz' ? service.nameUz || service.name_uz : service.nameRu || service.name_ru) || '').toLocaleLowerCase().includes(query));
-      const matchesCategory = !categoryFilter || master.category === categoryFilter;
-      const matchesRegion = !selectedRegion || master.region === selectedRegion;
-      const matchesDistrict = !selectedDistrict || master.district === selectedDistrict;
+      const selectedCategory = categories.find(item => item.id === categoryFilter);
+      const matchesCategory = !categoryFilter || master.category === categoryFilter || master.category === selectedCategory?.nameUz || master.category === selectedCategory?.nameRu;
+      const matchesRegion = !regionFilter || master.region === regionFilter;
+      const matchesDistrict = !districtFilter || master.district === districtFilter;
       return matchesSearch && matchesCategory && matchesRegion && matchesDistrict;
     });
 
@@ -80,7 +82,7 @@ export default function Masters() {
       if (sortBy === 'jobs') return (b.jobs_completed || 0) - (a.jobs_completed || 0);
       return (b.rating || 0) - (a.rating || 0);
     });
-  }, [masters, searchQuery, categoryFilter, selectedRegion, selectedDistrict, sortBy, language]);
+  }, [masters, searchQuery, categoryFilter, regionFilter, districtFilter, sortBy, language]);
 
   const getDistrictName = (regionId?: string | null, districtId?: string | null) => {
     const region = regions.find(item => item.id === regionId);
@@ -135,7 +137,7 @@ export default function Masters() {
         </div>
 
         {showFilters && (
-          <div className="mb-7 grid gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-3 sm:p-6">
+          <div className="mb-7 grid gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-4 sm:p-6">
             <div>
               <label className="mb-2 block text-sm font-semibold text-slate-700">
                 {language === 'uz' ? 'Kategoriya' : 'Категория'}
@@ -146,8 +148,18 @@ export default function Masters() {
               </select>
             </div>
             <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-700">{language === 'uz' ? 'Hudud' : 'Регион и район'}</label>
-              <RegionFilter />
+              <label className="mb-2 block text-sm font-semibold text-slate-700">{language === 'uz' ? 'Hudud' : 'Регион'}</label>
+              <select value={regionFilter} onChange={event => { setRegionFilter(event.target.value); setDistrictFilter(''); }} className="w-full rounded-xl border border-slate-200 px-3 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100">
+                <option value="">{language === 'uz' ? 'Barcha hududlar' : 'Все регионы'}</option>
+                {regions.map(region => <option key={region.id} value={region.id}>{language === 'uz' ? region.nameUz : region.nameRu}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-700">{language === 'uz' ? 'Tuman' : 'Район'}</label>
+              <select value={districtFilter} onChange={event => setDistrictFilter(event.target.value)} disabled={!regionFilter} className="w-full rounded-xl border border-slate-200 px-3 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:bg-slate-50 disabled:text-slate-400">
+                <option value="">{language === 'uz' ? 'Barcha tumanlar' : 'Все районы'}</option>
+                {regions.find(region => region.id === regionFilter)?.districts.map(district => <option key={district.id} value={district.id}>{language === 'uz' ? district.nameUz : district.nameRu}</option>)}
+              </select>
             </div>
             <div>
               <label className="mb-2 block text-sm font-semibold text-slate-700">{language === 'uz' ? 'Saralash' : 'Сортировка'}</label>
@@ -220,7 +232,7 @@ export default function Masters() {
             <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
               {language === 'uz' ? 'Boshqa hudud yoki kategoriya tanlang. Yangi ustalar ro‘yxatdan o‘tgan sari shu yerda ko‘rinadi.' : 'Попробуйте выбрать другой регион или категорию. Новые специалисты появятся здесь после регистрации.'}
             </p>
-            <button type="button" onClick={() => { setSearchQuery(''); setCategoryFilter(''); }} className="mt-5 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+            <button type="button" onClick={() => { setSearchQuery(''); setCategoryFilter(''); setRegionFilter(''); setDistrictFilter(''); }} className="mt-5 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">
               {language === 'uz' ? 'Filtrlarni tozalash' : 'Сбросить поиск и категорию'}
             </button>
           </div>

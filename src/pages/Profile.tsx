@@ -123,6 +123,8 @@ export default function Profile() {
   const [phone, setPhone] = useState('');
   const [services, setServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [profileError, setProfileError] = useState('');
   const [showServiceModal, setShowServiceModal] = useState(false);
   const [editingService, setEditingService] = useState<{ index: number; nameUz: string; nameRu: string; price: number } | null>(null);
   const [newService, setNewService] = useState({ nameUz: '', nameRu: '', price: 0 });
@@ -187,12 +189,18 @@ export default function Profile() {
 
   const handleSave = async () => {
     if (!user) return;
+    if (!name.trim()) {
+      setProfileError(language === 'uz' ? 'Ismni kiriting.' : 'Введите имя.');
+      return;
+    }
+    setSaving(true);
+    setProfileError('');
 
     try {
       const { error: updateError } = await supabase
         .from('users')
         .update({
-          name: name,
+          name: name.trim(),
           phone: phone,
           avatar_url: avatar,
           about_uz: aboutUz,
@@ -205,13 +213,14 @@ export default function Profile() {
 
       if (updateError) {
         console.error('Ошибка сохранения:', updateError);
-        alert('Ошибка сохранения профиля: ' + updateError.message);
+        setProfileError(language === 'uz' ? 'Profilni saqlab bo‘lmadi. Qayta urinib ko‘ring.' : 'Не удалось сохранить профиль. Попробуйте ещё раз.');
+        setSaving(false);
         return;
       }
 
       setUser({ 
         ...user, 
-        name, 
+        name: name.trim(), 
         avatar,
         phone,
         aboutUz, 
@@ -221,10 +230,12 @@ export default function Profile() {
       });
       
       setEditMode(false);
-      alert('Профиль успешно обновлён');
+      setSaving(false);
+      alert(language === 'uz' ? 'Profil yangilandi.' : 'Профиль обновлён.');
     } catch (err) {
       console.error('Ошибка:', err);
-      alert('Произошла ошибка при сохранении');
+      setProfileError(language === 'uz' ? 'Saqlashda xatolik yuz berdi.' : 'Произошла ошибка при сохранении.');
+      setSaving(false);
     }
   };
 
@@ -437,6 +448,7 @@ export default function Profile() {
               <h2 className="text-xl font-bold text-gray-900 mb-4">{t('aboutMe')}</h2>
               {editMode ? (
                 <div className="space-y-4">
+                  {profileError && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{profileError}</p>}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">{t('name')}</label>
                     <input
@@ -495,9 +507,10 @@ export default function Profile() {
                   <div className="flex gap-3">
                     <button
                       onClick={handleSave}
-                      className="bg-blue-600 text-white px-6 py-2 rounded-xl hover:bg-blue-700 transition-colors"
+                      disabled={saving}
+                      className="bg-blue-600 text-white px-6 py-2 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50"
                     >
-                      {t('save')}
+                      {saving ? (language === 'uz' ? 'Saqlanmoqda...' : 'Сохранение...') : t('save')}
                     </button>
                     <button
                       onClick={() => setEditMode(false)}

@@ -123,6 +123,8 @@ export default function Profile() {
   const [aboutRu, setAboutRu] = useState('');
   const [experience, setExperience] = useState(0);
   const [phone, setPhone] = useState('');
+  const [region, setRegion] = useState('');
+  const [district, setDistrict] = useState('');
   const [services, setServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -156,6 +158,8 @@ export default function Profile() {
       } else if (data) {
         setName(data.name || user.name || '');
         setPhone(data.phone || user.phone || '');
+        setRegion(data.region || '');
+        setDistrict(data.district || '');
         setAvatar(data.avatar_url || user.avatar || '');
         setAboutUz(data.about_uz || '');
         setAboutRu(data.about_ru || '');
@@ -209,6 +213,7 @@ export default function Profile() {
           about_ru: aboutRu,
           experience: experience,
           services: services,
+          ...(user.role === 'master' ? { region, district } : {}),
           updated_at: new Date().toISOString(),
         })
         .eq('id', user.id);
@@ -229,6 +234,8 @@ export default function Profile() {
         aboutRu, 
         experience,
         services,
+        region: user.role === 'master' ? region : user.region,
+        district: user.role === 'master' ? district : user.district,
       });
       
       setEditMode(false);
@@ -327,7 +334,7 @@ export default function Profile() {
     setUser({ ...user, services: updatedServices } as any);
   };
 
-  const currentRegion = regions.find(r => r.id === user?.region);
+  const currentRegion = regions.find(r => r.id === (region || user?.region));
 
   if (loading) {
     return (
@@ -503,6 +510,33 @@ export default function Profile() {
                           onChange={(e) => setExperience(parseInt(e.target.value) || 0)}
                           className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
+                      </div>
+                      <div>
+                        <label className="mb-2 block text-sm font-medium text-gray-700">{language === 'uz' ? 'Hudud' : 'Регион'}</label>
+                        <select
+                          value={region}
+                          onChange={(e) => {
+                            const nextRegion = regions.find(item => item.id === e.target.value);
+                            setRegion(e.target.value);
+                            setDistrict(nextRegion?.districts[0]?.id || '');
+                          }}
+                          className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        >
+                          <option value="">{language === 'uz' ? 'Hududni tanlang' : 'Выберите регион'}</option>
+                          {regions.map(item => <option key={item.id} value={item.id}>{language === 'uz' ? item.nameUz : item.nameRu}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="mb-2 block text-sm font-medium text-gray-700">{language === 'uz' ? 'Tuman' : 'Район'}</label>
+                        <select
+                          value={district}
+                          onChange={(e) => setDistrict(e.target.value)}
+                          disabled={!region}
+                          className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:bg-slate-50"
+                        >
+                          <option value="">{language === 'uz' ? 'Tumanni tanlang' : 'Выберите район'}</option>
+                          {regions.find(item => item.id === region)?.districts.map(item => <option key={item.id} value={item.id}>{language === 'uz' ? item.nameUz : item.nameRu}</option>)}
+                        </select>
                       </div>
                     </>
                   )}

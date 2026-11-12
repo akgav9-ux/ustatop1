@@ -28,7 +28,7 @@ export default function Login() {
       // Ищем пользователя по телефону
       const { data: user, error: findError } = await supabase
         .from('users')
-        .select('*')
+        .select('id, name, phone, role, password')
         .eq('phone', phone)
         .single();
 

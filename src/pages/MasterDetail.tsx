@@ -15,9 +15,10 @@ export default function MasterDetail() {
     const fetchMaster = async () => {
       setLoading(true);
       const { data, error } = await supabase
-        .from('masters')
+        .from('users')
         .select('*')
         .eq('id', id)
+        .eq('role', 'master')
         .single();
 
       if (error) {

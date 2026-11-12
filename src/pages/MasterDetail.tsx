@@ -99,7 +99,7 @@ export default function MasterDetail() {
                   )}
                   <span className="flex items-center gap-1">
                     <MapPin className="h-4 w-4" />
-                    {language === 'uz' ? currentRegion?.nameUz : currentRegion?.nameRu}
+                    {(language === 'uz' ? currentRegion?.nameUz : currentRegion?.nameRu) || (language === 'uz' ? 'Hudud ko‘rsatilmagan' : 'Регион не указан')}
                   </span>
                 </div>
               </div>

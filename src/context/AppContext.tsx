@@ -26,6 +26,9 @@ interface AppUser {
   experience?: number;
   services?: any[];
   balance?: number;
+  rating?: number;
+  jobsCompleted?: number;
+  favoritesCount?: number;
 }
 
 interface AppContextType {
@@ -93,6 +96,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
           experience: userData.experience,
           services: userData.services || [],
           balance: userData.balance,
+          rating: userData.rating,
+          jobsCompleted: userData.jobs_completed,
+          favoritesCount: userData.favorites_count,
         };
         setUser(appUser);
         setIsLoggedIn(true);

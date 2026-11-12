@@ -94,9 +94,9 @@ export default function Jobs() {
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const hours = Math.floor(diff / (1000 * 60 * 60));
-    if (hours < 24) return t('today') + ', ' + date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    if (hours < 24) return t('today') + ', ' + date.toLocaleTimeString(language === 'uz' ? 'uz-UZ' : 'ru-RU', { hour: '2-digit', minute: '2-digit' });
     if (hours < 48) return t('yesterday') + ', ' + date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-    return date.toLocaleDateString('ru-RU');
+    return date.toLocaleDateString(language === 'uz' ? 'uz-UZ' : 'ru-RU');
   };
 
   const getDistrictName = (regionId: string, districtId: string) => {

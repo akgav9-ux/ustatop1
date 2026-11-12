@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { Phone, MapPin, Star, Briefcase, CheckCircle, Edit2, Settings, LogOut, Heart, MessageCircle, Clock, Camera, X, Plus, Edit3, Trash2 } from 'lucide-react';
-import { regions } from '../data';
+import { regions, categories } from '../data';
 import { supabase } from '../lib/supabaseClient';
 
 // Компонент для загрузки аватара
@@ -125,6 +125,7 @@ export default function Profile() {
   const [phone, setPhone] = useState('');
   const [region, setRegion] = useState('');
   const [district, setDistrict] = useState('');
+  const [category, setCategory] = useState('');
   const [services, setServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -160,6 +161,8 @@ export default function Profile() {
         setPhone(data.phone || user.phone || '');
         setRegion(data.region || '');
         setDistrict(data.district || '');
+        const savedCategory = categories.find(item => item.id === data.category || item.nameUz === data.category || item.nameRu === data.category);
+        setCategory(savedCategory?.id || '');
         setAvatar(data.avatar_url || user.avatar || '');
         setAboutUz(data.about_uz || '');
         setAboutRu(data.about_ru || '');
@@ -220,7 +223,7 @@ export default function Profile() {
           about_ru: aboutRu,
           experience: experience,
           services: services,
-          ...(user.role === 'master' ? { region, district } : {}),
+          ...(user.role === 'master' ? { region, district, category } : {}),
           updated_at: new Date().toISOString(),
         })
         .eq('id', user.id);
@@ -243,6 +246,7 @@ export default function Profile() {
         services,
         region: user.role === 'master' ? region : user.region,
         district: user.role === 'master' ? district : user.district,
+        category: user.role === 'master' ? category : user.category,
       });
       
       setEditMode(false);
@@ -517,6 +521,17 @@ export default function Profile() {
                           onChange={(e) => setExperience(parseInt(e.target.value) || 0)}
                           className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
+                      </div>
+                      <div>
+                        <label className="mb-2 block text-sm font-medium text-gray-700">{language === 'uz' ? 'Asosiy xizmat yo‘nalishi' : 'Основная категория услуг'}</label>
+                        <select
+                          value={category}
+                          onChange={(e) => setCategory(e.target.value)}
+                          className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        >
+                          <option value="">{language === 'uz' ? 'Yo‘nalishni tanlang' : 'Выберите категорию'}</option>
+                          {categories.map(item => <option key={item.id} value={item.id}>{language === 'uz' ? item.nameUz : item.nameRu}</option>)}
+                        </select>
                       </div>
                       <div>
                         <label className="mb-2 block text-sm font-medium text-gray-700">{language === 'uz' ? 'Hudud' : 'Регион'}</label>

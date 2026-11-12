@@ -192,9 +192,10 @@ export default function Masters() {
                         <p className="mt-1 text-sm text-slate-500">{(language === 'uz' ? category?.nameUz : category?.nameRu) || (master.services?.length ? (language === 'uz' ? 'Xizmatlar' : 'Услуги') : (language === 'uz' ? 'Mutaxassis' : 'Специалист'))}</p>
                       </Link>
                       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
-                        <span className="inline-flex items-center gap-1"><Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />{master.rating || 0} ({master.reviews || 0})</span>
-                        <span>{master.experience ? `${master.experience} ${language === 'uz' ? 'yil tajriba' : 'лет опыта'}` : (language === 'uz' ? 'Profil' : 'Профиль')}</span>
-                        <span>{master.jobs_completed || 0} {language === 'uz' ? 'ish' : 'работ'}</span>
+                        {(Number(master.rating) > 0 || Number(master.reviews) > 0) && <span className="inline-flex items-center gap-1"><Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />{Number(master.rating || 0).toFixed(1)} ({master.reviews || 0})</span>}
+                        {master.experience != null && <span>{master.experience} {language === 'uz' ? 'yil tajriba' : 'лет опыта'}</span>}
+                        {master.jobs_completed != null && <span>{master.jobs_completed} {language === 'uz' ? 'ish' : 'работ'}</span>}
+                        {!master.rating && !master.reviews && master.experience == null && master.jobs_completed == null && <span>{language === 'uz' ? 'Yangi profil' : 'Новый профиль'}</span>}
                       </div>
                       <p className="mt-2 flex items-center gap-1 text-xs text-slate-500"><MapPin className="h-3.5 w-3.5 shrink-0" />{getRegionName(master.region)}, {getDistrictName(master.region, master.district)}</p>
                     </div>
@@ -202,7 +203,7 @@ export default function Masters() {
                   {description && <p className="mt-4 line-clamp-2 text-sm leading-6 text-slate-600">{description}</p>}
                   <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
                     <span className={`rounded-full px-3 py-1 text-xs font-semibold ${master.is_online ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
-                      {master.is_online ? t('online') : t('recently')}
+                      {master.is_online ? t('online') : (language === 'uz' ? 'Oflayn' : 'Не в сети')}
                     </span>
                     <Link to={`/chat/${master.id}`} className="rounded-xl bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-800">
                       {t('write')}

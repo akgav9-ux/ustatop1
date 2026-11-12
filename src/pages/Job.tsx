@@ -57,7 +57,7 @@ export default function Job() {
       if (jobData.author_id) {
         const { data: authorData, error: authorError } = await supabase
           .from('users')
-          .select('*')
+          .select('id, name, phone, avatar_url, is_verified')
           .eq('id', jobData.author_id)
           .single();
 

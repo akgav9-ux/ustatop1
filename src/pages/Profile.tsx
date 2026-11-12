@@ -29,13 +29,42 @@ function AvatarUpload({ currentAvatar, onAvatarChange, size = 120 }: {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const result = reader.result as string;
-      setPreview(result);
-      onAvatarChange(result);
+    const imageUrl = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(imageUrl);
+      const maxDimension = 640;
+      const scale = Math.min(1, maxDimension / Math.max(image.width, image.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(image.width * scale));
+      canvas.height = Math.max(1, Math.round(image.height * scale));
+      const context = canvas.getContext('2d');
+      if (!context) {
+        alert(t('error') || 'Не удалось обработать изображение');
+        return;
+      }
+      context.fillStyle = '#ffffff';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(blob => {
+        if (!blob) {
+          alert(t('error') || 'Не удалось обработать изображение');
+          return;
+        }
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const result = reader.result as string;
+          setPreview(result);
+          onAvatarChange(result);
+        };
+        reader.readAsDataURL(blob);
+      }, 'image/jpeg', 0.82);
     };
-    reader.readAsDataURL(file);
+    image.onerror = () => {
+      URL.revokeObjectURL(imageUrl);
+      alert(t('error') || 'Не удалось открыть изображение');
+    };
+    image.src = imageUrl;
   };
 
   const handleRemove = () => {

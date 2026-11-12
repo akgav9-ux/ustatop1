@@ -104,8 +104,8 @@ export default function CreateJob() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-3xl mx-auto px-4">
+    <div className="min-h-screen bg-slate-50 py-6 sm:py-10">
+      <div className="mx-auto max-w-3xl px-4 sm:px-6">
         <button
           onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
@@ -114,7 +114,7 @@ export default function CreateJob() {
           {t('back')}
         </button>
 
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
+        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-6">{t('createJob')}</h1>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -127,7 +127,7 @@ export default function CreateJob() {
                 placeholder={t('jobTitlePlaceholder')}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-xl border border-slate-200 px-4 py-3.5 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                 required
               />
             </div>

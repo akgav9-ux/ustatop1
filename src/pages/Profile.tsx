@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import { Phone, MapPin, Star, Briefcase, CheckCircle, Edit2, Settings, LogOut, Heart, MessageCircle, Clock, Camera, X, Plus, Edit3, Trash2 } from 'lucide-react';
+import { Phone, MapPin, Star, Briefcase, CheckCircle, Edit2, Settings, LogOut, MessageCircle, Clock, Camera, X, Plus, Edit3, Trash2 } from 'lucide-react';
 import { regions, categories } from '../data';
 import { supabase } from '../lib/supabaseClient';
 
@@ -450,7 +450,7 @@ export default function Profile() {
 
         {/* Stats */}
         {user.role === 'master' && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
             <div className="bg-white rounded-2xl p-6 border border-gray-100 text-center">
               <Star className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
               <p className="text-2xl font-bold text-gray-900">{user.rating != null ? Number(user.rating).toFixed(1) : '—'}</p>
@@ -465,11 +465,6 @@ export default function Profile() {
               <Clock className="w-8 h-8 text-green-500 mx-auto mb-2" />
               <p className="text-2xl font-bold text-gray-900">{experience || user.experience || 0}</p>
               <p className="text-sm text-gray-500">{t('experience')}</p>
-            </div>
-            <div className="bg-white rounded-2xl p-6 border border-gray-100 text-center">
-              <Heart className="w-8 h-8 text-red-500 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-gray-900">—</p>
-              <p className="text-sm text-gray-500">{t('favorites')}</p>
             </div>
           </div>
         )}

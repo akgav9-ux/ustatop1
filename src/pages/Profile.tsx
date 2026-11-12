@@ -209,7 +209,6 @@ export default function Profile() {
   const addService = async () => {
     if (newService.nameUz && newService.nameRu && newService.price > 0) {
       const updatedServices = [...services, { ...newService }];
-      setServices(updatedServices);
       
       if (user) {
         const { error: serviceError } = await supabase
@@ -224,6 +223,7 @@ export default function Profile() {
         }
       }
       
+      setServices(updatedServices);
       setUser({ ...user, services: updatedServices } as any);
       setNewService({ nameUz: '', nameRu: '', price: 0 });
       setShowServiceModal(false);
@@ -244,7 +244,6 @@ export default function Profile() {
         nameRu: editingService.nameRu,
         price: editingService.price,
       };
-      setServices(updatedServices);
       
       if (user) {
         const { error: serviceError } = await supabase
@@ -259,6 +258,7 @@ export default function Profile() {
         }
       }
       
+      setServices(updatedServices);
       setUser({ ...user, services: updatedServices } as any);
       setEditingService(null);
       setShowServiceModal(false);
@@ -267,7 +267,6 @@ export default function Profile() {
 
   const deleteService = async (index: number) => {
     const updatedServices = services.filter((_, i) => i !== index);
-    setServices(updatedServices);
     
     if (user) {
       const { error: serviceError } = await supabase
@@ -282,6 +281,7 @@ export default function Profile() {
       }
     }
     
+    setServices(updatedServices);
     setUser({ ...user, services: updatedServices } as any);
   };
 

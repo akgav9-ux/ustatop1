@@ -53,7 +53,7 @@ export default function ProfileJobs() {
   };
 
   const formatBudget = (budget: number) => {
-    return budget.toLocaleString('ru-RU') + ' ' + (t('sum') || 'сум');
+    return budget.toLocaleString(language === 'uz' ? 'uz-UZ' : 'ru-RU') + ' ' + (t('sum') || 'сум');
   };
 
   if (loading) {

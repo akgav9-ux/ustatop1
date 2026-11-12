@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { categories, regions } from '../data';
-import { Star, MapPin, Crown, CheckCircle, Search, Filter, UserRound } from 'lucide-react';
+import { Star, MapPin, CheckCircle, Search, Filter, UserRound } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
 type MasterRecord = {
@@ -199,7 +199,6 @@ export default function Masters() {
                         <div className="flex flex-wrap items-center gap-1.5">
                           <h2 className="truncate text-lg font-bold text-slate-900 group-hover:text-blue-700">{master.name || (language === 'uz' ? 'Usta' : 'Мастер')}</h2>
                           {master.is_verified && <CheckCircle className="h-4 w-4 shrink-0 text-blue-600" />}
-                          {master.is_vip && <Crown className="h-4 w-4 shrink-0 text-amber-500" />}
                         </div>
                         <p className="mt-1 text-sm text-slate-500">{(language === 'uz' ? category?.nameUz : category?.nameRu) || (master.services?.length ? (language === 'uz' ? 'Xizmatlar' : 'Услуги') : (language === 'uz' ? 'Mutaxassis' : 'Специалист'))}</p>
                       </Link>

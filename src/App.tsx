@@ -28,7 +28,7 @@ function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col">
       {!isChatPage && <Header />}
-      <main className={isChatPage ? 'flex-1' : 'flex-1'}>{children}</main>
+      <main className="flex-1">{children}</main>
       {!isChatPage && <Footer />}
       {!isChatPage && <BottomNav />}
     </div>

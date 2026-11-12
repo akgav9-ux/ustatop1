@@ -77,8 +77,10 @@ function AvatarUpload({ currentAvatar, onAvatarChange, size = 120 }: {
 
   return (
     <div className="relative inline-block">
-      <div
-        className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center cursor-pointer group"
+      <button
+        type="button"
+        aria-label={t('avatarTip') || 'Change profile photo'}
+        className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center cursor-pointer group focus:outline-none focus:ring-4 focus:ring-blue-200"
         style={{ width: size, height: size }}
         onClick={() => fileInputRef.current?.click()}
       >
@@ -92,7 +94,7 @@ function AvatarUpload({ currentAvatar, onAvatarChange, size = 120 }: {
         <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
           <Camera className="w-8 h-8 text-white" />
         </div>
-      </div>
+      </button>
       <input
         ref={fileInputRef}
         type="file"

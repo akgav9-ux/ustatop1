@@ -52,43 +52,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [selectedDistrict, setSelectedDistrict] = useState('chilonzor');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // Функция загрузки профиля из таблицы users по ID (с автоматическим созданием)
+  // Restore an existing profile for the legacy browser session
   const loadUserProfile = useCallback(async (userId: string) => {
     if (!userId) return null;
 
     try {
-      // Ищем пользователя
-      let { data: userData, error } = await supabase
+      // A saved browser ID is not a reason to create a database account.
+      // Only profiles that already exist may be restored from the legacy session.
+      const { data: userData, error } = await supabase
         .from('users')
         .select('*')
         .eq('id', userId)
         .maybeSingle();
 
-      // Если пользователь не найден - создаём автоматически
-      if (!userData && !error) {
-        console.log('👤 Пользователь не найден, создаём автоматически...');
-        
-        const { data: newUser, error: insertError } = await supabase
-          .from('users')
-          .insert([{
-            id: userId,
-            name: 'Пользователь',
-            phone: null,
-            role: 'customer',
-            created_at: new Date().toISOString()
-          }])
-          .select()
-          .single();
-
-        if (insertError) {
-          console.error('❌ Ошибка создания пользователя:', insertError);
-          return null;
-        }
-        
-        console.log('✅ Пользователь создан:', newUser);
-        userData = newUser;
-      } else if (error) {
+      if (error) {
         console.error('❌ Ошибка загрузки пользователя:', error);
+        return null;
+      }
+
+      if (!userData) {
+        localStorage.removeItem('user_session');
+        setUser(null);
+        setIsLoggedIn(false);
         return null;
       }
 

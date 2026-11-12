@@ -72,8 +72,10 @@ export default function MasterDetail() {
           <div className="px-8 pb-8">
             <div className="flex flex-col md:flex-row md:items-end gap-6 -mt-16">
               <div className="relative">
-                <div className="w-32 h-32 bg-white rounded-2xl shadow-lg flex items-center justify-center text-5xl font-bold text-blue-600 border-4 border-white">
-                  {master.name.charAt(0)}
+                <div className="flex h-32 w-32 items-center justify-center overflow-hidden rounded-2xl border-4 border-white bg-white text-5xl font-bold text-blue-700 shadow-lg">
+                  {master.avatar_url
+                    ? <img src={master.avatar_url} alt={master.name || 'Master'} className="h-full w-full object-cover" />
+                    : (master.name || 'U').charAt(0).toUpperCase()}
                 </div>
                 {master.is_online && (
                   <span className="absolute bottom-2 right-2 w-6 h-6 bg-green-500 border-4 border-white rounded-full"></span>
@@ -86,7 +88,7 @@ export default function MasterDetail() {
                   {master.is_vip && <Crown className="w-6 h-6 text-yellow-500" />}
                 </div>
                 <p className="text-gray-500 mt-1">
-                  {language === 'uz' ? currentCategory?.nameUz : currentCategory?.nameRu}
+                  {(language === 'uz' ? currentCategory?.nameUz : currentCategory?.nameRu) || (master.services?.length ? (language === 'uz' ? 'Xizmatlar' : 'Услуги') : (language === 'uz' ? 'Mutaxassis' : 'Специалист'))}
                 </p>
                 <div className="flex items-center gap-4 text-gray-500 mt-2">
                   <span className="flex items-center gap-1">
@@ -119,7 +121,7 @@ export default function MasterDetail() {
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-4">{t('aboutMe')}</h2>
               <p className="text-gray-600">
-                {language === 'uz' ? master.description_uz : master.description_ru}
+                {language === 'uz' ? master.about_uz : master.about_ru}
               </p>
             </div>
 
@@ -139,43 +141,13 @@ export default function MasterDetail() {
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl p-6 border border-gray-100">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">{t('reviews')}</h2>
-              <div className="space-y-4">
-                <div className="p-4 bg-gray-50 rounded-xl">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">A</div>
-                    <div>
-                      <p className="font-medium">Ali R.</p>
-                      <div className="flex items-center gap-1">
-                        {[1, 2, 3, 4, 5].map(i => <Star key={i} className="w-4 h-4 text-yellow-400 fill-yellow-400" />)}
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-gray-600 text-sm">
-                    {language === 'uz'
-                      ? 'Juda yaxshi usta, ishni sifatli bajardi. Tavsiya qilaman!'
-                      : 'Отличный мастер, выполнил работу качественно. Рекомендую!'}
-                  </p>
-                </div>
-                <div className="p-4 bg-gray-50 rounded-xl">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold">B</div>
-                    <div>
-                      <p className="font-medium">Bobur K.</p>
-                      <div className="flex items-center gap-1">
-                        {[1, 2, 3, 4].map(i => <Star key={i} className="w-4 h-4 text-yellow-400 fill-yellow-400" />)}
-                        <Star className="w-4 h-4 text-gray-300" />
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-gray-600 text-sm">
-                    {language === 'uz'
-                      ? 'Yaxshi ish, lekin biroz kechiktirdi.'
-                      : 'Хорошая работа, но немного задержался.'}
-                  </p>
-                </div>
-              </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+              <h2 className="mb-3 text-xl font-bold text-slate-900">{t('reviews')}</h2>
+              <p className="text-sm leading-6 text-slate-500">
+                {language === 'uz'
+                  ? 'Haqiqiy mijozlar sharhlari ishlar bajarilgandan so‘ng shu yerda ko‘rinadi.'
+                  : 'Здесь будут отображаться отзывы реальных заказчиков после завершённых работ.'}
+              </p>
             </div>
           </div>
 

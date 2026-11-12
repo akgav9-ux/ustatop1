@@ -24,7 +24,7 @@ type MasterRecord = {
 };
 
 export default function Masters() {
-  const { t, language } = useApp();
+  const { t, language, user } = useApp();
   const [searchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [categoryFilter, setCategoryFilter] = useState(searchParams.get('category') || '');
@@ -215,9 +215,9 @@ export default function Masters() {
                     <span className={`rounded-full px-3 py-1 text-xs font-semibold ${master.is_online ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
                       {master.is_online ? t('online') : (language === 'uz' ? 'Oflayn' : 'Не в сети')}
                     </span>
-                    <Link to={`/chat/${master.id}`} className="rounded-xl bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-800">
+                    {user?.id !== master.id && <Link to={`/chat/${master.id}`} className="rounded-xl bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-800">
                       {t('write')}
-                    </Link>
+                    </Link>}
                   </div>
                 </article>
               );

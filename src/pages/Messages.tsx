@@ -24,6 +24,7 @@ export default function Messages() {
       } else {
         const uniqueChats = new Map();
         data?.forEach(msg => {
+          if (!msg.chat_id) return;
           const chatKey = msg.chat_id;
           if (!uniqueChats.has(chatKey)) {
             const otherId = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id;
@@ -42,8 +43,6 @@ export default function Messages() {
             if (msg.receiver_id === user.id && !msg.is_read) {
               existing.unread_count += 1;
               existing.is_read = false;
-              existing.last_message = msg.text;
-              existing.last_message_time = msg.created_at;
             }
           }
         });
@@ -126,7 +125,7 @@ export default function Messages() {
               <Link
                 key={chat.chat_id}
                 to={`/chat/${chat.other_id}`}
-                className={`bg-white rounded-2xl p-4 hover:shadow-md transition-shadow border block ${
+                className={`block rounded-2xl border bg-white p-4 shadow-sm transition hover:shadow-md ${
                   !chat.is_read ? 'border-blue-300 bg-blue-50/30' : 'border-gray-100'
                 }`}
               >

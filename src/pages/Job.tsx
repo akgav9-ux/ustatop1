@@ -497,7 +497,7 @@ export default function Job() {
       {/* Модальное окно для отклика */}
       {showResponseModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6">
+          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-gray-900">
                 {language === 'uz' ? 'Taklifingizni yuboring' : 'Отправить предложение'}
@@ -511,6 +511,7 @@ export default function Job() {
             </div>
 
             <div className="space-y-4">
+              {responseError && <p role="alert" className="rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{responseError}</p>}
               <div className="bg-gray-50 p-3 rounded-xl">
                 <p className="text-sm text-gray-500">
                   {language === 'uz' ? 'Buyurtma byudjeti' : 'Бюджет заказа'}

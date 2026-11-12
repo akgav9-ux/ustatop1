@@ -43,8 +43,13 @@ export default function Header() {
   };
 
   useEffect(() => {
-    loadCounts();
+    if (!isLoggedIn || !user?.id) {
+      setUnreadNotifications(0);
+      setUnreadMessages(0);
+      return;
+    }
 
+    loadCounts();
     const handleRefresh = () => loadCounts();
     window.addEventListener('refreshCounters', handleRefresh);
     window.addEventListener('messageRead', handleRefresh);
@@ -56,7 +61,7 @@ export default function Header() {
         event: 'INSERT',
         schema: 'public',
         table: 'messages',
-        filter: `receiver_id=eq.${user?.id}`,
+        filter: 'receiver_id=eq.' + user.id,
       }, () => loadCounts())
       .subscribe();
 
@@ -66,6 +71,7 @@ export default function Header() {
       window.removeEventListener('messageSent', handleRefresh);
       supabase.removeChannel(channel);
     };
+
   }, [isLoggedIn, user?.id]);
 
   const handleSearch = (e: React.FormEvent) => {

@@ -40,7 +40,7 @@ export default function Job() {
     try {
       const { data: jobData, error: jobError } = await supabase
         .from('orders')
-        .select('*')
+        .select('id, author_id, author_name, title_uz, title_ru, description_uz, description_ru, budget, category, region, district, created_at, deadline, area, responses, status')
         .eq('id', id)
         .single();
 

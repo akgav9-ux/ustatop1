@@ -48,11 +48,25 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguage] = useState<Language>('ru');
+  const [language, setLanguage] = useState<Language>(() => {
+    try {
+      return localStorage.getItem('ustatop_language') === 'uz' ? 'uz' : 'ru';
+    } catch {
+      return 'ru';
+    }
+  });
   const [user, setUser] = useState<AppUser | null>(null);
   const [selectedRegion, setSelectedRegion] = useState('tashkent-city');
   const [selectedDistrict, setSelectedDistrict] = useState('chilonzor');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('ustatop_language', language);
+    } catch {
+      // Language selection remains available for the current session.
+    }
+  }, [language]);
 
   // Restore an existing profile for the legacy browser session
   const loadUserProfile = useCallback(async (userId: string) => {

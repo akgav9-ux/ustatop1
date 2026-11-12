@@ -15,6 +15,7 @@ export default function Notifications() {
       loadNotifications();
     } else {
       setNotifications([]);
+      setLoadError(false);
       setLoading(false);
     }
   }, [user?.id]);

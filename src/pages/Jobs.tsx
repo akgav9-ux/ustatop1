@@ -32,15 +32,6 @@ export default function Jobs() {
     }
 
     try {
-      if (reset) {
-        const cachedOrders = cache.getOrders();
-        if (cachedOrders && cachedOrders.length <= pageSize) {
-          setAllJobs(cachedOrders);
-          setLoading(false);
-          return;
-        }
-      }
-
       const from = reset ? 0 : page * pageSize;
       const to = from + pageSize - 1;
 
@@ -78,8 +69,8 @@ export default function Jobs() {
 
   let filteredJobs = allJobs.filter(job => {
     const matchesSearch = !searchQuery ||
-      (language === 'uz' ? job.title_uz : job.title_ru).toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (language === 'uz' ? job.description_uz : job.description_ru)?.toLowerCase().includes(searchQuery.toLowerCase());
+      ((language === 'uz' ? job.title_uz : job.title_ru) || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ((language === 'uz' ? job.description_uz : job.description_ru) || '').toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesCategory = !categoryFilter || job.category === categoryFilter;
     const matchesRegion = !regionFilter || job.region === regionFilter;
@@ -120,7 +111,9 @@ export default function Jobs() {
     <div className="min-h-screen bg-slate-50 py-6 sm:py-10">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">{t('jobs')}</h1>
+          <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-blue-700">{language === 'uz' ? 'Yangi imkoniyatlar' : 'Новые возможности'}</p>
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">{t('jobs')}</h1>
+          <p className="mt-2 mb-5 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">{language === 'uz' ? 'Hududingizdagi buyurtmalarni toping va mijozlarga taklif yuboring.' : 'Находите заявки в своём регионе и предлагайте заказчикам свои услуги.'}</p>
 
           <div className="relative mb-4">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -134,8 +127,10 @@ export default function Jobs() {
           </div>
 
           <button
+            type="button"
+            aria-expanded={showFilters}
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
+            className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-blue-700 shadow-sm hover:bg-blue-50"
           >
             <Filter className="w-5 h-5" />
             {language === 'uz' ? 'Filtrlar' : 'Фильтры'}
@@ -152,7 +147,7 @@ export default function Jobs() {
                 <select
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                 >
                   <option value="">{t('allCategories')}</option>
                   {categories.map(cat => (
@@ -281,8 +276,11 @@ export default function Jobs() {
               )}
             </>
           ) : (
-            <div className="bg-white rounded-2xl p-12 text-center border border-gray-100">
-              <p className="text-gray-500 text-lg">{t('noJobs')}</p>
+            <div className="rounded-2xl border border-slate-200 bg-white px-5 py-14 text-center shadow-sm">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-700"><Briefcase className="h-7 w-7" /></div>
+              <h2 className="text-lg font-bold text-slate-900">{t('noJobs')}</h2>
+              <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">{language === 'uz' ? 'Boshqa so‘z yoki hudud bilan qidirib ko‘ring. Yangi buyurtmalar shu yerda paydo bo‘ladi.' : 'Попробуйте изменить запрос или выбрать другой регион. Новые заявки будут появляться здесь.'}</p>
+              <button type="button" onClick={() => { setSearchQuery(''); setCategoryFilter(''); setRegionFilter(''); setDistrictFilter(''); }} className="mt-5 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">{language === 'uz' ? 'Filtrlarni tozalash' : 'Сбросить фильтры'}</button>
             </div>
           )}
         </div>

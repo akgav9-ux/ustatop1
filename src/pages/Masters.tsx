@@ -48,8 +48,8 @@ export default function Masters() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4">
+    <div className="min-h-screen bg-slate-50 py-6 sm:py-10">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-4">{t('masters')}</h1>
 
         {/* Поиск */}
@@ -60,7 +60,7 @@ export default function Masters() {
             placeholder={t('search')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-12 pr-4 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
           />
         </div>
 
@@ -75,7 +75,7 @@ export default function Masters() {
 
         {/* Фильтры */}
         {showFilters && (
-          <div className="bg-white rounded-2xl p-6 mb-8 border">
+          <div className="mb-8 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
             <div className="grid md:grid-cols-3 gap-6">
               {/* Категория */}
               <div>
@@ -131,11 +131,11 @@ export default function Masters() {
             const districtName = getDistrictName(master.region, master.district);
             
             return (
-              <div key={master.id} className="bg-white rounded-2xl p-6 hover:shadow-lg border">
+              <div key={master.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-lg sm:p-6">
                 <div className="flex flex-col md:flex-row gap-6">
                   {/* Аватар и ссылка на профиль */}
                   <Link to={`/master/${master.id}`} className="relative block">
-                    <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center text-white text-3xl font-bold">
+                    <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-3xl font-bold text-white shadow-sm sm:h-24 sm:w-24">
                       {master.name.charAt(0)}
                     </div>
                     {master.isOnline && (
@@ -186,7 +186,7 @@ export default function Masters() {
                     </span>
                     <Link
                       to={`/chat/${master.id}`}
-                      className="bg-blue-600 text-white px-6 py-2 rounded-xl text-center hover:bg-blue-700 transition-colors block"
+                      className="block rounded-xl bg-blue-700 px-6 py-3 text-center font-semibold text-white shadow-sm transition hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-200"
                       onClick={(e) => e.stopPropagation()}
                     >
                       {t('write')}

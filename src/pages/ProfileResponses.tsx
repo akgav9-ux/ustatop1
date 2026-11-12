@@ -115,7 +115,12 @@ export default function ProfileResponses() {
           </h1>
         </div>
 
-        {loadError ? (
+        {!user ? (
+          <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm">
+            <p className="text-slate-700">{language === 'uz' ? 'Javoblaringizni ko‘rish uchun tizimga kiring.' : 'Войдите, чтобы просматривать свои отклики.'}</p>
+            <Link to="/login" className="mt-5 inline-flex rounded-xl bg-blue-700 px-5 py-3 font-semibold text-white">{language === 'uz' ? 'Kirish' : 'Войти'}</Link>
+          </div>
+        ) : loadError ? (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-800">
             {language === 'uz' ? 'Javoblarni yuklab bo‘lmadi. Keyinroq qayta urinib ko‘ring.' : 'Не удалось загрузить отклики. Попробуйте позже.'}
           </div>

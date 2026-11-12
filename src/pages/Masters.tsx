@@ -44,7 +44,7 @@ export default function Masters() {
       setLoadError(false);
       const { data, error } = await supabase
         .from('users')
-        .select('*')
+        .select('id, name, avatar_url, category, rating, reviews, region, district, is_online, is_verified, about_uz, about_ru, services, experience, jobs_completed, created_at')
         .eq('role', 'master')
         .order('created_at', { ascending: false });
 

@@ -15,6 +15,10 @@ function AvatarUpload({ currentAvatar, onAvatarChange, size = 120 }: {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { t } = useApp();
 
+  useEffect(() => {
+    setPreview(currentAvatar || null);
+  }, [currentAvatar]);
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -400,7 +404,7 @@ export default function Profile() {
             <div className="flex flex-col md:flex-row md:items-end gap-6 -mt-16">
               <div className="relative">
                 <AvatarUpload
-                  currentAvatar={avatar || user.avatar}
+                  currentAvatar={avatar}
                   onAvatarChange={handleAvatarChange}
                   size={120}
                 />

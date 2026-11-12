@@ -225,7 +225,7 @@ export default function Job() {
   };
 
   const formatBudget = (budget: number) => {
-    return budget.toLocaleString('ru-RU') + ' ' + t('sum');
+    return budget.toLocaleString(language === 'uz' ? 'uz-UZ' : 'ru-RU') + ' ' + t('sum');
   };
 
   const getTimeAgo = (dateStr: string) => {

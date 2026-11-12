@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { categories, regions } from '../data';
-import { ChevronRight, Star, Clock, MapPin, Crown, Trophy, ArrowUpRight } from 'lucide-react';
+import { ArrowRight, MapPin, Clock, Search, ShieldCheck, Wrench, ClipboardList, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { cache } from '../lib/cache';
 
@@ -10,258 +10,189 @@ export default function Home() {
   const { t, language, user, isLoggedIn } = useApp();
   const [recentJobs, setRecentJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    loadRecentJobs();
-    if (isLoggedIn && user?.id) {
-      loadUnreadCount();
-    }
+    let active = true;
+    const load = async () => {
+      try {
+        const cached = cache.getOrders();
+        if (cached) {
+          if (active) setRecentJobs(cached.slice(0, 4));
+          return;
+        }
+        const { data, error } = await supabase
+          .from('orders')
+          .select('id, title_uz, title_ru, description_uz, description_ru, budget, region, district, created_at, responses')
+          .order('created_at', { ascending: false })
+          .limit(4);
+        if (!error && active) {
+          setRecentJobs(data || []);
+          cache.setOrders(data || []);
+        }
+      } catch (error) {
+        console.error('Не удалось загрузить свежие заказы:', error);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    load();
+    return () => { active = false; };
   }, []);
 
-const loadRecentJobs = async () => {
-  setLoading(true);
-  try {
-    const cachedOrders = cache.getOrders();
-    if (cachedOrders) {
-      console.log('Загрузка из кэша');
-      setRecentJobs(cachedOrders.slice(0, 5));  // ← 5 вместо 10
-      setLoading(false);
-      return;
-    }
+  const formatBudget = (budget: number) =>
+    Number(budget || 0).toLocaleString(language === 'uz' ? 'uz-UZ' : 'ru-RU') + ' ' + t('sum');
 
-    console.log('Загрузка из Supabase...');
-    const { data, error } = await supabase
-      .from('orders')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(5);  // ← 5 вместо 20
+  const getRegion = (id: string) => {
+    const region = regions.find(item => item.id === id);
+    return language === 'uz' ? region?.nameUz : region?.nameRu;
+  };
 
-    if (error) {
-      console.error('Ошибка загрузки заказов:', error);
-      setRecentJobs([]);
-    } else {
-      console.log('Загружено заказов из Supabase:', data?.length || 0);
-      cache.setOrders(data || []);
-      setRecentJobs((data || []).slice(0, 5));
-    }
-  } catch (err) {
-    console.error('Ошибка:', err);
-    setRecentJobs([]);
-  } finally {
-    setLoading(false);
-  }
-};
+  const getDate = (value: string) => {
+    const date = new Date(value);
+    return date.toLocaleDateString(language === 'uz' ? 'uz-UZ' : 'ru-RU', { day: 'numeric', month: 'short' });
+  };
 
-  const loadUnreadCount = async () => {
-    try {
-      const { count, error } = await supabase
-        .from('notifications')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user?.id)
-        .eq('is_read', false);
-
-      if (!error && count) {
-        setUnreadCount(count);
+  const copy = language === 'uz'
+    ? {
+        eyebrow: 'O‘zbekiston bo‘ylab xizmatlar platformasi',
+        title: 'Yaxshi usta topish endi oson',
+        subtitle: 'Usta qidiring yoki buyurtma joylashtiring. UstaTop’da hammasi bepul.',
+        find: 'Usta topish',
+        post: 'Buyurtma berish',
+        search: 'Qanday xizmat kerak?',
+        categories: 'Xizmat yo‘nalishlari',
+        categoriesHint: 'Kerakli xizmat turini tanlang',
+        all: 'Barcha ustalar',
+        fresh: 'Yangi buyurtmalar',
+        view: 'Barchasini ko‘rish',
+        how: 'UstaTop qanday ishlaydi?',
+        steps: ['Xizmatni tanlang', 'Buyurtma joylashtiring', 'Ustalar bilan bog‘laning'],
+        stepText: ['Kerakli mutaxassislikni toping', 'Ish tafsilotlarini bepul yozing', 'Takliflarni ko‘rib, ustani tanlang'],
+        freeTitle: 'Hamma uchun bepul',
+        freeText: 'Ro‘yxatdan o‘tish, buyurtma joylashtirish va ustalarga murojaat qilish uchun to‘lov yo‘q.',
+        noJobs: 'Hozircha yangi buyurtmalar yo‘q',
+        responses: 'Takliflar',
+        today: 'Bugun',
       }
-    } catch (err) {
-      console.error('Ошибка загрузки уведомлений:', err);
-    }
-  };
-
-  const formatBudget = (budget: number) => {
-    return budget.toLocaleString('ru-RU') + ' ' + t('sum');
-  };
-
-  const getTimeAgo = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    if (hours < 24) return t('today') + ', ' + date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-    if (hours < 48) return t('yesterday') + ', ' + date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-    return date.toLocaleDateString('ru-RU');
-  };
-
-  const getDistrictName = (regionId: string, districtId: string) => {
-    const region = regions.find(r => r.id === regionId);
-    const district = region?.districts.find(d => d.id === districtId);
-    return language === 'uz' ? district?.nameUz : district?.nameRu;
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+    : {
+        eyebrow: 'Площадка услуг по всему Узбекистану',
+        title: 'Найти хорошего мастера — просто',
+        subtitle: 'Ищите специалиста или размещайте заказ. На UstaTop всё бесплатно.',
+        find: 'Найти мастера',
+        post: 'Разместить заказ',
+        search: 'Какая услуга вам нужна?',
+        categories: 'Популярные услуги',
+        categoriesHint: 'Выберите, какая помощь вам нужна',
+        all: 'Все мастера',
+        fresh: 'Свежие заказы',
+        view: 'Смотреть все',
+        how: 'Как работает UstaTop?',
+        steps: ['Выберите услугу', 'Разместите заказ', 'Свяжитесь с мастером'],
+        stepText: ['Найдите нужную категорию', 'Бесплатно опишите свою задачу', 'Сравните предложения и выберите мастера'],
+        freeTitle: 'Бесплатно для всех',
+        freeText: 'Без оплаты за регистрацию, публикацию заказов и отклики. Без комиссии с вашей работы.',
+        noJobs: 'Пока нет новых заказов',
+        responses: 'Откликов',
+        today: 'Сегодня',
+      };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <section className="bg-gradient-to-br from-gray-900 via-blue-900 to-indigo-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 py-6 sm:py-12 lg:py-20">
-          <div className="grid lg:grid-cols-2 gap-6 sm:gap-12 items-center">
-            <div>
-              <h1 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-2 sm:mb-4 lg:mb-6 leading-tight">
-                {t('heroTitle')}
-              </h1>
-              <p className="text-sm sm:text-lg md:text-xl text-gray-300 mb-3 sm:mb-6 lg:mb-8">
-                {t('heroSubtitle')}
-              </p>
-              <div className="flex flex-wrap gap-2 sm:gap-4">
-                <Link to="/create-job" className="bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 rounded-xl font-semibold text-xs sm:text-sm lg:text-lg transition-colors flex items-center gap-1 sm:gap-2">
-                  {t('createJobBtn')}
-                  <ArrowUpRight className="w-3 h-3 sm:w-5 sm:h-5" />
-                </Link>
-                <Link to="/masters" className="bg-white/10 hover:bg-white/20 text-white px-3 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 rounded-xl font-semibold text-xs sm:text-sm lg:text-lg transition-colors border border-white/20">
-                  {t('masters')}
-                </Link>
-              </div>
+    <div className="min-h-screen bg-slate-50 text-slate-900">
+      <section className="relative overflow-hidden bg-white">
+        <div className="absolute -right-24 -top-28 h-80 w-80 rounded-full bg-orange-100/70 blur-3xl" />
+        <div className="absolute -left-24 bottom-0 h-72 w-72 rounded-full bg-blue-100/70 blur-3xl" />
+        <div className="relative mx-auto grid max-w-7xl items-center gap-8 px-4 pb-10 pt-9 sm:px-6 sm:pb-16 sm:pt-14 lg:grid-cols-[1.05fr_.95fr] lg:px-8 lg:py-20">
+          <div className="max-w-2xl">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 sm:text-sm">
+              <span className="h-2 w-2 rounded-full bg-orange-500" />
+              {copy.eyebrow}
             </div>
-            <div className="hidden lg:block">
-              <div className="relative">
-                <div className="w-full h-80 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-3xl border border-white/10 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-8xl mb-4">🔧</div>
-                    <p className="text-gray-400">{language === 'uz' ? 'Minglab ustalar' : 'Тысячи мастеров'}</p>
-                  </div>
-                </div>
-                <div className="absolute -bottom-6 -right-6 bg-white text-gray-900 p-4 rounded-2xl shadow-xl">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                      <span className="text-2xl">✓</span>
-                    </div>
-                    <div>
-                      <p className="font-semibold">500+</p>
-                      <p className="text-sm text-gray-500">{language === 'uz' ? 'Tasdiqlangan ustalar' : 'Проверенных мастеров'}</p>
-                    </div>
-                  </div>
-                </div>
+            <h1 className="max-w-xl text-4xl font-extrabold leading-[1.08] tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
+              {copy.title}
+            </h1>
+            <p className="mt-5 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">{copy.subtitle}</p>
+            <div className="mt-7 grid grid-cols-1 gap-3 sm:flex">
+              <Link to="/masters" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-blue-700 px-6 py-3 font-bold text-white shadow-lg shadow-blue-700/20 transition hover:-translate-y-0.5 hover:bg-blue-800">
+                <Search className="h-5 w-5" /> {copy.find} <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link to="/create-job" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-orange-200 bg-orange-50 px-6 py-3 font-bold text-orange-800 transition hover:bg-orange-100">
+                <ClipboardList className="h-5 w-5" /> {copy.post}
+              </Link>
+            </div>
+            <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-500">
+              <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-600" /> {language === 'uz' ? 'To‘lovsiz foydalanish' : 'Без оплаты и комиссий'}</span>
+              <span className="inline-flex items-center gap-2"><MapPin className="h-4 w-4 text-blue-600" /> {language === 'uz' ? 'Barcha hududlar' : 'Все регионы Узбекистана'}</span>
+            </div>
+          </div>
+          <div className="relative mx-auto w-full max-w-xl">
+            <div className="overflow-hidden rounded-[2rem] border border-slate-100 bg-slate-100 shadow-2xl shadow-blue-900/10">
+              <img src="https://images.unsplash.com/photo-1621905251918-48416bd8575a?auto=format&fit=crop&w=1100&q=85" alt={language === 'uz' ? 'Uyda ishlayotgan usta' : 'Мастер за работой'} className="h-64 w-full object-cover sm:h-80 lg:h-[420px]" />
+            </div>
+            <div className="absolute -bottom-5 left-3 right-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-xl sm:left-8 sm:right-auto sm:min-w-72">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-100 text-orange-700"><Wrench className="h-6 w-6" /></div>
+                <div><p className="font-bold text-slate-900">{language === 'uz' ? 'Oson va qulay' : 'Просто и удобно'}</p><p className="text-sm text-slate-500">{language === 'uz' ? 'Usta va mijoz bir joyda' : 'Мастера и заказчики в одном месте'}</p></div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Categories */}
-      <section className="max-w-7xl mx-auto px-4 py-6 sm:py-12">
-        <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mb-3 sm:mb-6 lg:mb-8">
-          {language === 'uz' ? 'Kategoriyalar' : 'Категории'}
-        </h2>
-        <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 lg:gap-4">
-          {categories.map(cat => (
-            <Link key={cat.id} to={`/jobs?category=${cat.id}`} className="group relative rounded-lg sm:rounded-xl lg:rounded-2xl overflow-hidden aspect-square block shadow-sm hover:shadow-md transition-all">
-              <img src={cat.icon} alt={language === 'uz' ? cat.nameUz : cat.nameRu} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-              <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
-              <div className="absolute bottom-1 left-2 right-2 text-left">
-                <span className="text-white font-medium text-xs leading-tight block truncate">
-                  {language === 'uz' ? cat.nameUz : cat.nameRu}
-                </span>
+      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+        <div className="mb-6 flex flex-col gap-2 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
+          <div><p className="text-sm font-bold uppercase tracking-wider text-orange-600">{language === 'uz' ? 'Yo‘nalishni tanlang' : 'Выберите направление'}</p><h2 className="mt-1 text-2xl font-extrabold tracking-tight sm:text-3xl">{copy.categories}</h2><p className="mt-2 text-sm text-slate-500 sm:text-base">{copy.categoriesHint}</p></div>
+          <Link to="/masters" className="inline-flex items-center gap-1 text-sm font-bold text-blue-700 hover:text-blue-900">{copy.all}<ArrowRight className="h-4 w-4" /></Link>
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-6">
+          {categories.map((cat, index) => (
+            <Link key={cat.id} to={`/jobs?category=${cat.id}`} className="group overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+              <div className="relative aspect-[1.18] overflow-hidden bg-slate-100">
+                <img src={cat.icon} alt={language === 'uz' ? cat.nameUz : cat.nameRu} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/65 via-transparent to-transparent" />
+                <span className="absolute bottom-3 left-3 right-3 text-sm font-bold leading-tight text-white">{language === 'uz' ? cat.nameUz : cat.nameRu}</span>
               </div>
+              <div className="flex items-center justify-between px-3 py-2.5 text-xs font-semibold text-blue-700"><span>{language === 'uz' ? 'Buyurtmalar' : 'Заказы'}</span><ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></div>
             </Link>
           ))}
         </div>
       </section>
 
-      {/* Fresh Jobs */}
-      <section className="max-w-7xl mx-auto px-4 py-6 sm:py-12">
-        <div className="flex items-center justify-between mb-3 sm:mb-6 lg:mb-8">
-          <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">{t('freshJobs')}</h2>
-          <Link to="/jobs" className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 text-xs sm:text-base">
-            {t('viewAll')}
-            <ChevronRight className="w-3 h-3 sm:w-5 sm:h-5" />
-          </Link>
-        </div>
-        <div className="space-y-2 sm:space-y-4">
-          {recentJobs.length > 0 ? recentJobs.map(job => (
-            <Link key={job.id} to={`/job/${job.id}`} className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-6 hover:shadow-lg transition-shadow border border-gray-100 block">
-              <div className="flex flex-col md:flex-row md:items-center gap-2 sm:gap-4">
-                <div className="w-full md:w-24 lg:w-32 h-16 sm:h-24 bg-gray-200 rounded-lg sm:rounded-xl overflow-hidden flex-shrink-0">
-                  <img src="/images/job-icon.png" alt="job" className="w-full h-full object-cover" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-sm sm:text-lg font-semibold text-gray-900 mb-0.5 sm:mb-2">
-                    {language === 'uz' ? job.title_uz : job.title_ru}
-                  </h3>
-                  <div className="flex flex-wrap items-center gap-1 sm:gap-4 text-xs text-gray-500 mb-0.5 sm:mb-2">
-                    <span className="flex items-center gap-0.5 sm:gap-1">
-                      <MapPin className="w-3 h-3 sm:w-4 sm:h-4" />
-                      {language === 'uz' ? regions.find(r => r.id === job.region)?.nameUz : regions.find(r => r.id === job.region)?.nameRu}
-                      {job.district && <span className="text-gray-400 ml-1">({getDistrictName(job.region, job.district)})</span>}
-                    </span>
-                    <span className="flex items-center gap-0.5 sm:gap-1">
-                      <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
-                      {getTimeAgo(job.created_at)}
-                    </span>
-                  </div>
-                  <p className="text-gray-600 text-xs sm:text-sm line-clamp-2 hidden sm:block">
-                    {language === 'uz' ? job.description_uz : job.description_ru}
-                  </p>
-                </div>
-                <div className="text-left md:text-right mt-2 md:mt-0">
-                  <p className="text-base sm:text-xl font-bold text-green-600 mb-0.5 sm:mb-2">
-                    {formatBudget(job.budget)}
-                  </p>
-                  <span className="inline-block bg-blue-50 text-blue-600 px-1.5 sm:px-3 py-0.5 rounded-full text-xs sm:text-sm">
-                    {t('responses')}: {job.responses || 0}
-                  </span>
-                </div>
-              </div>
-            </Link>
-          )) : (
-            <div className="bg-white rounded-2xl p-8 sm:p-12 text-center border border-gray-100">
-              <p className="text-gray-500 text-sm sm:text-base">Пока нет активных заказов</p>
-              <Link to="/create-job" className="inline-block mt-4 bg-blue-600 text-white px-6 py-2 rounded-xl text-sm hover:bg-blue-700 transition">
-                Создать первый заказ
-              </Link>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* How it works */}
-      <section className="bg-white py-6 sm:py-12 lg:py-16">
-        <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 text-center mb-4 sm:mb-8 lg:mb-12">{t('howItWorks')}</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-8">
-            {[
-              { num: 1, title: t('step1Title'), desc: t('step1Desc'), icon: '📝' },
-              { num: 2, title: t('step2Title'), desc: t('step2Desc'), icon: '📩' },
-              { num: 3, title: t('step3Title'), desc: t('step3Desc'), icon: '⭐' },
-              { num: 4, title: t('step4Title'), desc: t('step4Desc'), icon: '✅' },
-            ].map(step => (
-              <div key={step.num} className="text-center">
-                <div className="w-10 h-10 sm:w-16 sm:h-16 bg-blue-100 rounded-full flex items-center justify-center text-xl sm:text-3xl mx-auto mb-2 sm:mb-4">
-                  {step.icon}
-                </div>
-                <div className="w-5 h-5 sm:w-8 sm:h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold mx-auto mb-1 sm:mb-3 text-xs sm:text-base">
-                  {step.num}
-                </div>
-                <h3 className="font-semibold text-gray-900 mb-0.5 sm:mb-2 text-xs sm:text-base">{step.title}</h3>
-                <p className="text-gray-500 text-xs sm:text-sm hidden sm:block">{step.desc}</p>
-              </div>
-            ))}
+      <section className="bg-white py-12 sm:py-16">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-6 flex items-center justify-between gap-3 sm:mb-8">
+            <div><p className="text-sm font-bold uppercase tracking-wider text-orange-600">{language === 'uz' ? 'Yangi e’lonlar' : 'Новые заявки'}</p><h2 className="mt-1 text-2xl font-extrabold tracking-tight sm:text-3xl">{copy.fresh}</h2></div>
+            <Link to="/jobs" className="inline-flex shrink-0 items-center gap-1 text-sm font-bold text-blue-700">{copy.view}<ArrowRight className="h-4 w-4" /></Link>
           </div>
+          {loading ? <div className="rounded-2xl border border-slate-100 bg-slate-50 p-8 text-center text-slate-500">{t('loading')}</div> : recentJobs.length ? (
+            <div className="grid gap-3 md:grid-cols-2">
+              {recentJobs.map(job => (
+                <Link key={job.id} to={`/job/${job.id}`} className="group rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-blue-200 hover:shadow-lg sm:p-5">
+                  <div className="flex items-start justify-between gap-3"><h3 className="font-bold leading-snug text-slate-900 group-hover:text-blue-700">{language === 'uz' ? job.title_uz : job.title_ru}</h3><span className="shrink-0 rounded-lg bg-emerald-50 px-2.5 py-1 text-sm font-bold text-emerald-700">{formatBudget(job.budget)}</span></div>
+                  <p className="mt-2 line-clamp-2 text-sm text-slate-500">{language === 'uz' ? job.description_uz : job.description_ru}</p>
+                  <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-500"><span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{getRegion(job.region) || (language === 'uz' ? 'O‘zbekiston' : 'Узбекистан')}</span><span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{getDate(job.created_at)}</span><span>{copy.responses}: {job.responses || 0}</span></div>
+                </Link>
+              ))}
+            </div>
+          ) : <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center"><p className="font-semibold text-slate-700">{copy.noJobs}</p><Link to="/create-job" className="mt-4 inline-flex rounded-xl bg-blue-700 px-5 py-2.5 font-semibold text-white">{copy.post}</Link></div>}
         </div>
       </section>
 
-      {/* VIP Banner */}
-      <section className="max-w-7xl mx-auto px-4 py-6 sm:py-12">
-        <div className="bg-gradient-to-r from-purple-600 to-indigo-700 rounded-xl sm:rounded-2xl lg:rounded-3xl p-4 sm:p-8 lg:p-12 text-white">
-          <div className="flex flex-col lg:flex-row items-center gap-3 sm:gap-8">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-4">
-                <Trophy className="w-6 h-6 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-yellow-400" />
-                <h2 className="text-base sm:text-xl lg:text-2xl font-bold">{t('topProfile')}</h2>
-              </div>
-              <p className="text-purple-200 mb-3 sm:mb-6 text-xs sm:text-base">{t('vipDesc')}</p>
-              <Link to="/register" className="inline-block bg-white text-purple-700 px-3 sm:px-6 py-1.5 sm:py-3 rounded-lg sm:rounded-xl font-semibold hover:bg-purple-50 transition-colors text-xs sm:text-base">
-                {t('promoteProfile')}
-              </Link>
-            </div>
-            <div className="text-4xl sm:text-6xl lg:text-8xl opacity-50">🏆</div>
+      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+        <div className="mb-8 text-center"><p className="text-sm font-bold uppercase tracking-wider text-orange-600">{language === 'uz' ? 'Uchta oddiy qadam' : 'Всего три шага'}</p><h2 className="mt-1 text-2xl font-extrabold tracking-tight sm:text-3xl">{copy.how}</h2></div>
+        <div className="grid gap-4 md:grid-cols-3">
+          {copy.steps.map((step, index) => {
+            const Icon = [Search, ClipboardList, CheckCircle2][index];
+            return <div key={step} className="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-700"><Icon className="h-7 w-7" /></div><div className="mt-4 text-xs font-extrabold uppercase tracking-widest text-orange-600">{language === 'uz' ? `QADAM ${index + 1}` : `ШАГ ${index + 1}`}</div><h3 className="mt-2 font-bold text-slate-900">{step}</h3><p className="mt-2 text-sm leading-6 text-slate-500">{copy.stepText[index]}</p></div>;
+          })}
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 pb-14 sm:px-6 sm:pb-20 lg:px-8">
+        <div className="overflow-hidden rounded-[2rem] bg-gradient-to-r from-blue-800 to-blue-600 px-6 py-8 text-white sm:px-10 sm:py-10">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="max-w-2xl"><div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-bold"><ShieldCheck className="h-4 w-4" /> {copy.freeTitle}</div><h2 className="mt-4 text-2xl font-extrabold sm:text-3xl">{copy.freeTitle}</h2><p className="mt-2 max-w-xl text-sm leading-6 text-blue-100 sm:text-base">{copy.freeText}</p></div>
+            <Link to={isLoggedIn ? '/create-job' : '/register'} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-orange-500 px-6 py-3 font-bold text-white shadow-lg transition hover:bg-orange-600">{isLoggedIn ? copy.post : t('register')}<ArrowRight className="h-4 w-4" /></Link>
           </div>
         </div>
       </section>

@@ -198,6 +198,14 @@ export default function Profile() {
       setProfileError(language === 'uz' ? 'Ismni kiriting.' : 'Введите имя.');
       return;
     }
+    if (phone && !/^\\+998[0-9]{9}$/.test(phone)) {
+      setProfileError(language === 'uz' ? 'Telefon +998XXXXXXXXX formatida bo‘lishi kerak.' : 'Телефон должен быть в формате +998XXXXXXXXX.');
+      return;
+    }
+    if (user.role === 'master' && region && !regions.find(item => item.id === region)?.districts.some(item => item.id === district)) {
+      setProfileError(language === 'uz' ? 'Hudud va tumanni to‘g‘ri tanlang.' : 'Выберите корректный регион и район.');
+      return;
+    }
     setSaving(true);
     setProfileError('');
 

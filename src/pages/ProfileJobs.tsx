@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabaseClient';
+import { regions } from '../data';
 import { MapPin, Clock, ArrowLeft } from 'lucide-react';
 
 export default function ProfileJobs() {
@@ -39,6 +40,14 @@ export default function ProfileJobs() {
     }
   };
 
+  const getLocationName = (regionId?: string, districtId?: string) => {
+    const region = regions.find(item => item.id === regionId);
+    const district = region?.districts.find(item => item.id === districtId);
+    const regionName = language === 'uz' ? region?.nameUz : region?.nameRu;
+    const districtName = language === 'uz' ? district?.nameUz : district?.nameRu;
+    return [regionName, districtName].filter(Boolean).join(', ') || (language === 'uz' ? 'Hudud ko‘rsatilmagan' : 'Регион не указан');
+  };
+
   const formatBudget = (budget: number) => {
     return budget.toLocaleString('ru-RU') + ' ' + (t('sum') || 'сум');
   };
@@ -52,8 +61,8 @@ export default function ProfileJobs() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4">
+    <div className="min-h-screen bg-slate-50 py-6 sm:py-10">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <Link
           to="/profile"
           className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
@@ -62,7 +71,7 @@ export default function ProfileJobs() {
           {language === 'uz' ? 'Orqaga' : 'Назад'}
         </Link>
 
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">
+        <h1 className="mb-6 text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">
           {language === 'uz' ? 'Mening buyurtmalarim' : 'Мои заказы'}
         </h1>
 
@@ -84,7 +93,7 @@ export default function ProfileJobs() {
               <Link
                 key={job.id}
                 to={`/job/${job.id}`}
-                className="bg-white rounded-2xl p-6 hover:shadow-lg transition-shadow border border-gray-100 block"
+                className="block rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg sm:p-6"
               >
                 <div className="flex flex-col md:flex-row md:items-start gap-4">
                   <div className="flex-1">
@@ -97,7 +106,7 @@ export default function ProfileJobs() {
                     <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
                       <span className="flex items-center gap-1">
                         <MapPin className="w-4 h-4" />
-                        {language === 'uz' ? job.region : job.region}
+                        {getLocationName(job.region, job.district)}
                       </span>
                       <span className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />

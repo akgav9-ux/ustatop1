@@ -115,10 +115,17 @@ export default function Chat() {
 
   if (!isLoggedIn || !user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-500">{language === 'uz' ? 'Tizimga kiring' : 'Войдите в аккаунт'}</p>
+      <div className="flex min-h-[60vh] items-center justify-center bg-slate-50 px-4">
+        <div className="text-center">
+          <p className="text-slate-700">{language === 'uz' ? 'Xabarlarni ko‘rish uchun tizimga kiring.' : 'Войдите, чтобы открыть переписку.'}</p>
+          <Link to="/login" className="mt-5 inline-flex rounded-xl bg-blue-700 px-5 py-3 font-semibold text-white">{language === 'uz' ? 'Kirish' : 'Войти'}</Link>
+        </div>
       </div>
     );
+  }
+
+  if (user?.id === userId) {
+    return <div className="flex min-h-[60vh] items-center justify-center bg-slate-50 text-slate-600">{language === 'uz' ? 'Bu o‘zingizning profilingiz.' : 'Это ваш собственный профиль.'}</div>;
   }
 
   if (loading) {

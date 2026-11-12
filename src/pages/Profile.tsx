@@ -133,6 +133,7 @@ export default function Profile() {
   const [showServiceModal, setShowServiceModal] = useState(false);
   const [editingService, setEditingService] = useState<{ index: number; nameUz: string; nameRu: string; price: number } | null>(null);
   const [newService, setNewService] = useState({ nameUz: '', nameRu: '', price: 0 });
+  const [serviceError, setServiceError] = useState('');
   const navigate = useNavigate();
 
   // Загружаем данные пользователя из Supabase
@@ -267,6 +268,11 @@ export default function Profile() {
   };
 
   const addService = async () => {
+    if (!newService.nameUz.trim() || !newService.nameRu.trim() || newService.price <= 0) {
+      setServiceError(language === 'uz' ? 'Ikkala nom va narxni kiriting.' : 'Укажите оба названия и цену больше нуля.');
+      return;
+    }
+    setServiceError('');
     if (newService.nameUz && newService.nameRu && newService.price > 0) {
       const updatedServices = [...services, { ...newService }];
       
@@ -297,6 +303,11 @@ export default function Profile() {
   };
 
   const updateService = async () => {
+    if (editingService && (!editingService.nameUz.trim() || !editingService.nameRu.trim() || editingService.price <= 0)) {
+      setServiceError(language === 'uz' ? 'Ikkala nom va narxni kiriting.' : 'Укажите оба названия и цену больше нуля.');
+      return;
+    }
+    setServiceError('');
     if (editingService) {
       const updatedServices = [...services];
       updatedServices[editingService.index] = {
@@ -601,6 +612,7 @@ export default function Profile() {
                   <button
                     onClick={() => {
                       setEditingService(null);
+                      setServiceError('');
                       setNewService({ nameUz: '', nameRu: '', price: 0 });
                       setShowServiceModal(true);
                     }}
@@ -626,7 +638,7 @@ export default function Profile() {
                             {language === 'uz' ? service.nameUz : service.nameRu}
                           </span>
                           <span className="text-green-600 font-semibold ml-3">
-                            {service.price.toLocaleString('ru-RU')} {t('sum')}
+                            {Number(service.price || 0).toLocaleString(language === 'uz' ? 'uz-UZ' : 'ru-RU')} {t('sum')}
                           </span>
                         </div>
                         <div className="flex gap-2">
@@ -678,7 +690,7 @@ export default function Profile() {
       {/* Modal for adding/editing service */}
       {showServiceModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6">
+          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-6">
             <h3 className="text-xl font-bold mb-4">
               {editingService !== null 
                 ? (language === 'uz' ? 'Xizmatni tahrirlash' : 'Редактировать услугу')
@@ -686,6 +698,7 @@ export default function Profile() {
             </h3>
             
             <div className="space-y-4">
+              {serviceError && <p role="alert" className="rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{serviceError}</p>}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Название (UZ)
@@ -722,6 +735,9 @@ export default function Profile() {
                 </label>
                 <input
                   type="number"
+                  min="1"
+                  step="1"
+                  inputMode="numeric"
                   value={editingService ? editingService.price : newService.price}
                   onChange={(e) => editingService
                     ? setEditingService({ ...editingService, price: parseInt(e.target.value) || 0 })
@@ -743,6 +759,7 @@ export default function Profile() {
                 onClick={() => {
                   setShowServiceModal(false);
                   setEditingService(null);
+                  setServiceError('');
                 }}
                 className="flex-1 border border-gray-300 py-2 rounded-xl font-semibold hover:bg-gray-50"
               >

@@ -6,7 +6,7 @@ import { regions, categories } from '../data';
 import { 
   ArrowLeft, MapPin, Clock, DollarSign, 
   Briefcase, Ruler, Calendar, User, Phone,
-  Edit2, Trash2, MessageCircle, CheckCircle, Crown, X
+  Trash2, MessageCircle, CheckCircle, Crown, X
 } from 'lucide-react';
 
 export default function Job() {
@@ -18,6 +18,9 @@ export default function Job() {
   const [author, setAuthor] = useState<any>(null);
   const [deleting, setDeleting] = useState(false);
   const [responses, setResponses] = useState<any[]>([]);
+  const [myResponse, setMyResponse] = useState<any>(null);
+  const [responseError, setResponseError] = useState('');
+  const [updatingResponse, setUpdatingResponse] = useState(false);
   
   // Состояния для модального окна отклика
   const [showResponseModal, setShowResponseModal] = useState(false);
@@ -61,6 +64,13 @@ export default function Job() {
         if (!authorError && authorData) {
           setAuthor(authorData);
         }
+      }
+
+      if (user?.id && user.id !== jobData.author_id && user.role === 'master') {
+        const { data: ownResponse } = await supabase.from('responses').select('id, status').eq('order_id', id).eq('master_id', user.id).maybeSingle();
+        setMyResponse(ownResponse || null);
+      } else {
+        setMyResponse(null);
       }
 
       // Загружаем отклики, если текущий пользователь - автор
@@ -112,6 +122,13 @@ export default function Job() {
       return;
     }
 
+    setResponseError('');
+    if (!user?.id || user.id === job?.author_id || user.role !== 'master') return;
+    if (myResponse) {
+      setResponseError(language === 'uz' ? 'Siz bu buyurtmaga allaqachon javob yuborgansiz.' : 'Вы уже откликались на эту заявку.');
+      setShowResponseModal(false);
+      return;
+    }
     setSending(true);
     try {
       // 1. Сохраняем отклик
@@ -131,7 +148,7 @@ export default function Job() {
 
       if (responseError) {
         console.error('Ошибка отправки отклика:', responseError);
-        alert('Ошибка при отправке отклика');
+        setResponseError(language === 'uz' ? 'Javob yuborilmadi. Qayta urinib ko‘ring.' : 'Не удалось отправить отклик. Попробуйте ещё раз.');
         setSending(false);
         return;
       }
@@ -158,6 +175,8 @@ export default function Job() {
         created_at: new Date().toISOString()
       }]);
 
+      setResponseError('');
+      setMyResponse({ status: 'pending' });
       alert(language === 'uz' ? 'Javobingiz yuborildi!' : 'Ваш отклик отправлен!');
       setShowResponseModal(false);
       setProposedPrice('');
@@ -174,30 +193,34 @@ export default function Job() {
   };
 
   const handleAcceptResponse = async (responseId: string, masterId: string) => {
-    if (!confirm('Принять этого мастера?')) return;
-    
-    await supabase
-      .from('responses')
-      .update({ status: 'accepted' })
-      .eq('id', responseId);
-    
-    await supabase
-      .from('responses')
-      .update({ status: 'rejected' })
-      .eq('order_id', id)
-      .neq('id', responseId);
-    
-    alert('Мастер принят!');
+    if (!isAuthor || !user?.id || !confirm(language === 'uz' ? 'Ushbu ustani tanlaysizmi?' : 'Принять этого мастера?')) return;
+    setUpdatingResponse(true);
+    const { error } = await supabase.from('responses').update({ status: 'accepted' }).eq('id', responseId).eq('order_id', id);
+    if (error) {
+      alert(language === 'uz' ? 'Javobni qabul qilib bo‘lmadi.' : 'Не удалось принять отклик.');
+      setUpdatingResponse(false);
+      return;
+    }
+    const { error: rejectError } = await supabase.from('responses').update({ status: 'rejected' }).eq('order_id', id).neq('id', responseId).eq('status', 'pending');
+    if (rejectError) console.error('Не удалось отклонить остальные отклики:', rejectError);
+    await supabase.from('notifications').insert([{
+      user_id: masterId,
+      title: language === 'uz' ? 'Buyurtma sizga berildi' : 'Ваш отклик принят',
+      message: language === 'uz' ? 'Buyurtmachi sizning taklifingizni qabul qildi.' : 'Заказчик принял ваше предложение.',
+      link: '/job/' + id,
+      is_read: false,
+      created_at: new Date().toISOString(),
+    }]);
+    setUpdatingResponse(false);
     loadJob();
   };
 
   const handleRejectResponse = async (responseId: string) => {
-    await supabase
-      .from('responses')
-      .update({ status: 'rejected' })
-      .eq('id', responseId);
-    
-    alert('Отклик отклонён');
+    if (!isAuthor || !user?.id) return;
+    setUpdatingResponse(true);
+    const { error } = await supabase.from('responses').update({ status: 'rejected' }).eq('id', responseId).eq('order_id', id);
+    if (error) alert(language === 'uz' ? 'Javobni rad etib bo‘lmadi.' : 'Не удалось отклонить отклик.');
+    setUpdatingResponse(false);
     loadJob();
   };
 
@@ -275,12 +298,6 @@ export default function Job() {
               </h1>
               {isAuthor && (
                 <div className="flex gap-2">
-                  <Link
-                    to={`/edit-job/${job.id}`}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
-                  >
-                    <Edit2 className="w-5 h-5" />
-                  </Link>
                   <button
                     onClick={handleDelete}
                     disabled={deleting}
@@ -426,13 +443,15 @@ export default function Job() {
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleAcceptResponse(res.id, res.master_id)}
-                            className="bg-green-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-green-700"
+                            disabled={updatingResponse}
+                            className="bg-green-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-green-700 disabled:opacity-50"
                           >
                             Принять
                           </button>
                           <button
                             onClick={() => handleRejectResponse(res.id)}
-                            className="bg-red-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-red-700"
+                            disabled={updatingResponse}
+                            className="bg-red-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-red-700 disabled:opacity-50"
                           >
                             Отклонить
                           </button>
@@ -446,8 +465,9 @@ export default function Job() {
           )}
 
           {/* Кнопка отклика */}
-          {!isAuthor && isLoggedIn && user?.role === 'master' && (
+          {!isAuthor && isLoggedIn && user?.role === 'master' && !myResponse && (
             <div className="p-6 bg-gray-50">
+              {responseError && <p role="alert" className="mb-3 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{responseError}</p>}
               <button
                 onClick={() => setShowResponseModal(true)}
                 className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors"
@@ -456,6 +476,8 @@ export default function Job() {
               </button>
             </div>
           )}
+
+          {!isAuthor && isLoggedIn && user?.role === 'master' && myResponse && <div className="p-6 bg-blue-50 text-center text-sm font-medium text-blue-800">{language === 'uz' ? 'Siz bu buyurtmaga javob yuborgansiz.' : 'Вы уже отправили отклик на эту заявку.'}</div>}
 
           {!isLoggedIn && (
             <div className="p-6 bg-gray-50 text-center">
@@ -505,6 +527,9 @@ export default function Job() {
                 </label>
                 <input
                   type="number"
+                  min="1"
+                  step="1"
+                  inputMode="numeric"
                   value={proposedPrice}
                   onChange={(e) => setProposedPrice(e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -542,7 +567,7 @@ export default function Job() {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={handleRespond}
-                disabled={sending || !proposedPrice}
+                disabled={sending || !proposedPrice || Number(proposedPrice) <= 0}
                 className="flex-1 bg-green-600 text-white py-2 rounded-xl font-semibold hover:bg-green-700 transition-colors disabled:opacity-50"
               >
                 {sending ? (language === 'uz' ? 'Yuborilmoqda...' : 'Отправка...') : (language === 'uz' ? 'Yuborish' : 'Отправить')}

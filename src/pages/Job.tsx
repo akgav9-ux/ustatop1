@@ -77,7 +77,7 @@ export default function Job() {
       if (user?.id === jobData.author_id) {
         const { data: responsesData } = await supabase
           .from('responses')
-          .select('*')
+          .select('id, order_id, master_id, master_name, master_avatar, proposed_price, proposed_deadline, comment, status, created_at')
           .eq('order_id', id)
           .order('created_at', { ascending: false });
         setResponses(responsesData || []);

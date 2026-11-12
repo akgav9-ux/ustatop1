@@ -59,7 +59,7 @@ function App() {
         console.log('🔄 Предзагрузка заказов...');
         const { data } = await supabase
           .from('orders')
-          .select('*')
+          .select('id, title_uz, title_ru, description_uz, description_ru, budget, category, region, district, created_at, responses, author_id')
           .limit(10)
           .order('created_at', { ascending: false });
         if (data) cache.setOrders(data);

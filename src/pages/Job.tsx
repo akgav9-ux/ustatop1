@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabaseClient';
 import { regions, categories } from '../data';
 import { 
   ArrowLeft, MapPin, Clock, DollarSign, 
-  Briefcase, Ruler, Calendar, User, Phone,
+  Briefcase, Ruler, Calendar, Phone,
   Trash2, MessageCircle, CheckCircle, X
 } from 'lucide-react';
 

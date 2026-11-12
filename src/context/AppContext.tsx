@@ -20,7 +20,6 @@ interface AppUser {
   region?: string;
   district?: string;
   isVerified?: boolean;
-  isVIP?: boolean;
   aboutUz?: string;
   aboutRu?: string;
   experience?: number;
@@ -90,7 +89,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
           region: userData.region,
           district: userData.district,
           isVerified: userData.is_verified,
-          isVIP: userData.is_vip,
           aboutUz: userData.about_uz,
           aboutRu: userData.about_ru,
           experience: userData.experience,

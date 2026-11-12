@@ -9,6 +9,7 @@ export default function ProfileJobs() {
   const { t, language, user } = useApp();
   const [myJobs, setMyJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     if (user?.id) {
@@ -20,6 +21,7 @@ export default function ProfileJobs() {
 
   const loadMyJobs = async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const { data, error } = await supabase
         .from('orders')
@@ -29,8 +31,8 @@ export default function ProfileJobs() {
 
       if (error) {
         console.error('Ошибка загрузки заказов:', error);
+        setLoadError(true);
       } else {
-        console.log('Загружено заказов:', data?.length);
         setMyJobs(data || []);
       }
     } catch (err) {
@@ -75,7 +77,14 @@ export default function ProfileJobs() {
           {language === 'uz' ? 'Mening buyurtmalarim' : 'Мои заказы'}
         </h1>
 
-        {myJobs.length === 0 ? (
+        {!user ? (
+          <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm">
+            <p className="text-slate-700">{language === 'uz' ? 'Buyurtmalaringizni ko‘rish uchun tizimga kiring.' : 'Войдите, чтобы просматривать свои заказы.'}</p>
+            <Link to="/login" className="mt-5 inline-flex rounded-xl bg-blue-700 px-5 py-3 font-semibold text-white">{language === 'uz' ? 'Kirish' : 'Войти'}</Link>
+          </div>
+        ) : loadError ? (
+          <div role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-800">{language === 'uz' ? 'Buyurtmalarni yuklab bo‘lmadi. Qayta urinib ko‘ring.' : 'Не удалось загрузить заказы. Попробуйте ещё раз.'}</div>
+        ) : myJobs.length === 0 ? (
           <div className="bg-white rounded-2xl p-12 text-center border border-gray-100">
             <p className="text-gray-500 mb-4">
               {language === 'uz' ? 'Siz hali hech qanday buyurtma yaratmadingiz' : 'Вы ещё не создали ни одного заказа'}

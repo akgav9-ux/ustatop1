@@ -6,7 +6,7 @@ import { regions, categories } from '../data';
 import { 
   ArrowLeft, MapPin, Clock, DollarSign, 
   Briefcase, Ruler, Calendar, User, Phone,
-  Trash2, MessageCircle, CheckCircle, Crown, X
+  Trash2, MessageCircle, CheckCircle, X
 } from 'lucide-react';
 
 export default function Job() {
@@ -395,7 +395,6 @@ export default function Job() {
                   <div className="flex items-center gap-2">
                     <p className="font-semibold text-gray-900">{author.name}</p>
                     {author.is_verified && <CheckCircle className="w-4 h-4 text-blue-500" />}
-                    {author.is_vip && <Crown className="w-4 h-4 text-yellow-500" />}
                   </div>
                   {author.phone && (
                     <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">

@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
 export default function MasterDetail() {
-  const { t, language } = useApp();
+  const { t, language, user } = useApp();
   const { id } = useParams<{ id: string }>();
   const [master, setMaster] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -57,7 +57,7 @@ export default function MasterDetail() {
   }
 
   const currentRegion = regions.find(r => r.id === master.region);
-  const currentCategory = categories.find(c => c.id === master.category);
+  const currentCategory = categories.find(c => c.id === master.category || c.nameUz === master.category || c.nameRu === master.category);
 
   return (
     <div className="min-h-screen bg-slate-50 py-6 sm:py-10">
@@ -108,10 +108,10 @@ export default function MasterDetail() {
                   <Phone className="h-5 w-5" />
                   {t('call')}
                 </a>}
-                <Link to={`/chat/${master.id}`} className="flex items-center gap-2 rounded-xl bg-blue-700 px-6 py-3 font-medium text-white transition-colors hover:bg-blue-800">
+                {user?.id !== master.id && <Link to={`/chat/${master.id}`} className="flex items-center gap-2 rounded-xl bg-blue-700 px-6 py-3 font-medium text-white transition-colors hover:bg-blue-800">
                   <MessageCircle className="w-5 h-5" />
                   {t('sendMessage')}
-                </Link>
+                </Link>}
               </div>
             </div>
           </div>
@@ -135,7 +135,7 @@ export default function MasterDetail() {
                       {language === 'uz' ? service.nameUz : service.nameRu}
                     </span>
                     <span className="text-green-600 font-semibold">
-                      {service.price.toLocaleString('ru-RU')} {t('sum')}
+                      {Number(service.price || 0).toLocaleString(language === 'uz' ? 'uz-UZ' : 'ru-RU')} {t('sum')}
                     </span>
                   </div>
                 )) : <p className="text-sm text-slate-500">{language === 'uz' ? 'Usta hali xizmatlar ro‘yxatini qo‘shmagan.' : 'Мастер пока не добавил список услуг.'}</p>}
@@ -190,10 +190,10 @@ export default function MasterDetail() {
                 <Phone className="h-5 w-5" />
                 {master.phone}
               </a> : <p className="mb-3 text-center text-sm text-slate-500">{language === 'uz' ? 'Telefon raqam ko‘rsatilmagan' : 'Номер телефона не указан'}</p>}
-              <Link to={`/chat/${master.id}`} className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-700 py-3 font-medium text-white transition-colors hover:bg-blue-800">
+              {user?.id !== master.id && <Link to={`/chat/${master.id}`} className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-700 py-3 font-medium text-white transition-colors hover:bg-blue-800">
                 <MessageCircle className="h-5 w-5" />
                 {t('sendMessage')}
-              </Link>
+              </Link>}
             </div>
           </div>
         </div>

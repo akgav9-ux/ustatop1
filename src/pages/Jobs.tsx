@@ -16,6 +16,7 @@ export default function Jobs() {
   const [showFilters, setShowFilters] = useState(false);
   const [allJobs, setAllJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const pageSize = 20;
@@ -26,6 +27,7 @@ export default function Jobs() {
 
   const loadJobs = async (reset = true) => {
     setLoading(true);
+    setLoadError(false);
     if (reset) {
       setAllJobs([]);
       setPage(0);
@@ -44,8 +46,10 @@ export default function Jobs() {
 
       if (error) {
         console.error('Ошибка загрузки заказов:', error);
+        setLoadError(true);
         if (reset) setAllJobs([]);
       } else {
+        setLoadError(false);
         if (reset) {
           setAllJobs(data || []);
           cache.setOrders(data || []);
@@ -153,7 +157,7 @@ export default function Jobs() {
                 >
                   <option value="">{t('allCategories')}</option>
                   {categories.map(cat => (
-                    <option key={cat.id} value={cat.nameUz}>
+                    <option key={cat.id} value={cat.id}>
                       {language === 'uz' ? cat.nameUz : cat.nameRu}
                     </option>
                   ))}
@@ -201,7 +205,12 @@ export default function Jobs() {
         )}
 
         <div className="space-y-4">
-          {filteredJobs.length > 0 ? (
+          {loadError && allJobs.length === 0 ? (
+            <div role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center text-sm text-amber-800">
+              <p>{language === 'uz' ? 'Buyurtmalarni yuklab bo‘lmadi.' : 'Не удалось загрузить заявки.'}</p>
+              <button type="button" onClick={() => loadJobs(true)} className="mt-3 rounded-xl bg-white px-4 py-2 font-semibold text-amber-800 shadow-sm">{language === 'uz' ? 'Qayta urinish' : 'Повторить'}</button>
+            </div>
+          ) : filteredJobs.length > 0 ? (
             <>
               {filteredJobs.map(job => (
                 <Link

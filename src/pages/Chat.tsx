@@ -32,7 +32,11 @@ export default function Chat() {
       .eq('chat_id', chatId)
       .order('created_at', { ascending: true });
     if (error) console.error('Ошибка загрузки сообщений:', error);
-    setMessages(data || []);
+    setMessages(prev => {
+      const merged = new Map<string, any>();
+      [...(data || []), ...prev].forEach(message => merged.set(message.id, message));
+      return Array.from(merged.values()).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    });
     setLoading(false);
     setTimeout(() => messagesEndRef.current?.scrollIntoView(), 100);
   };

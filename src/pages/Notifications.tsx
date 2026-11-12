@@ -17,7 +17,7 @@ export default function Notifications() {
       setNotifications([]);
       setLoading(false);
     }
-  }, [user]);
+  }, [user?.id]);
 
   const loadNotifications = async () => {
     setLoading(true);

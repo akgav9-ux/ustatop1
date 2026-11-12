@@ -174,7 +174,7 @@ export default function MasterDetail() {
                 <div className="flex items-center gap-3">
                   <Clock className="w-5 h-5 text-gray-400" />
                   <div>
-                    <p className="text-sm text-gray-500">{master.is_online ? t('online') : t('recently')}</p>
+                    <p className="text-sm text-gray-500">{master.is_online ? t('online') : (language === 'uz' ? 'Oflayn' : 'Не в сети')}</p>
                     <p className="font-semibold">
                       {master.is_online
                         ? (language === 'uz' ? 'Hozir onlayn' : 'Сейчас онлайн')

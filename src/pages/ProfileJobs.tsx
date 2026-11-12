@@ -15,6 +15,8 @@ export default function ProfileJobs() {
     if (user?.id) {
       loadMyJobs();
     } else {
+      setMyJobs([]);
+      setLoadError(false);
       setLoading(false);
     }
   }, [user?.id]);

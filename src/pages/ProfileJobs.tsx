@@ -25,7 +25,7 @@ export default function ProfileJobs() {
     try {
       const { data, error } = await supabase
         .from('orders')
-        .select('*')
+        .select('id, title_uz, title_ru, description_uz, description_ru, budget, region, district, created_at, responses')
         .eq('author_id', user?.id)
         .order('created_at', { ascending: false });
 

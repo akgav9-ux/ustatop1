@@ -28,7 +28,6 @@ interface AppUser {
   balance?: number;
   rating?: number;
   jobsCompleted?: number;
-  favoritesCount?: number;
 }
 
 interface AppContextType {
@@ -64,7 +63,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // Only profiles that already exist may be restored from the legacy session.
       const { data: userData, error } = await supabase
         .from('users')
-        .select('id, name, phone, avatar_url, role, region, district, category, is_verified, about_uz, about_ru, experience, services, balance, rating, jobs_completed, favorites_count')
+        .select('id, name, phone, avatar_url, role, region, district, category, is_verified, about_uz, about_ru, experience, services, balance, rating, jobs_completed')
         .eq('id', userId)
         .maybeSingle();
 
@@ -98,7 +97,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
           balance: userData.balance,
           rating: userData.rating,
           jobsCompleted: userData.jobs_completed,
-          favoritesCount: userData.favorites_count,
         };
         setUser(appUser);
         setIsLoggedIn(true);

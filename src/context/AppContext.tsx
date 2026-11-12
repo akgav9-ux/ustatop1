@@ -64,7 +64,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // Only profiles that already exist may be restored from the legacy session.
       const { data: userData, error } = await supabase
         .from('users')
-        .select('*')
+        .select('id, name, phone, avatar_url, role, region, district, is_verified, about_uz, about_ru, experience, services, balance, rating, jobs_completed, favorites_count')
         .eq('id', userId)
         .maybeSingle();
 

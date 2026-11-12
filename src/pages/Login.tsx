@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabaseClient';
 import { Phone, Lock, Eye, EyeOff } from 'lucide-react';
 
 export default function Login() {
-  const { t, language, setUser, setIsLoggedIn } = useApp();
+  const { language, setUser, setIsLoggedIn } = useApp();
   const navigate = useNavigate();
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');

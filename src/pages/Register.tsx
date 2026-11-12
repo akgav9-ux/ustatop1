@@ -116,8 +116,8 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
-      <div className="max-w-md w-full bg-white rounded-3xl shadow-lg p-8">
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-8 sm:py-12">
+      <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-5 shadow-xl shadow-slate-200/60 sm:p-8">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-gray-900">
             {language === 'uz' ? "Ro'yxatdan o'tish" : 'Регистрация'}
@@ -144,7 +144,7 @@ export default function Register() {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-xl border border-slate-200 py-3.5 pl-10 pr-4 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                 placeholder={language === 'uz' ? 'Ismingizni kiriting' : 'Введите ваше имя'}
               />
             </div>
@@ -176,7 +176,7 @@ export default function Register() {
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-xl border border-slate-200 py-3.5 pl-10 pr-12 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                 placeholder={language === 'uz' ? 'Parolni kiriting' : 'Введите пароль'}
               />
               <button

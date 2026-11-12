@@ -57,6 +57,11 @@ export default function Messages() {
   };
 
   useEffect(() => {
+    if (!user?.id) {
+      setLoading(false);
+      setChats([]);
+      return;
+    }
     loadChats();
 
     const handleUpdate = () => loadChats();
@@ -91,8 +96,8 @@ export default function Messages() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-2xl mx-auto px-4">
+    <div className="min-h-screen bg-slate-50 py-6 sm:py-10">
+      <div className="mx-auto max-w-2xl px-4 sm:px-6">
         <div className="flex items-center gap-4 mb-6">
           <Link to="/" className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
             <ArrowLeft className="w-6 h-6" />
@@ -102,7 +107,13 @@ export default function Messages() {
           </h1>
         </div>
 
-        {chats.length === 0 ? (
+        {!user ? (
+          <div className="rounded-2xl border border-slate-200 bg-white px-5 py-12 text-center shadow-sm">
+            <MessageCircle className="mx-auto mb-4 h-12 w-12 text-slate-300" />
+            <p className="text-slate-700">{language === 'uz' ? 'Xabarlarni ko‘rish uchun tizimga kiring.' : 'Войдите, чтобы просматривать сообщения.'}</p>
+            <Link to="/login" className="mt-5 inline-flex rounded-xl bg-blue-700 px-5 py-3 font-semibold text-white">{language === 'uz' ? 'Kirish' : 'Войти'}</Link>
+          </div>
+        ) : chats.length === 0 ? (
           <div className="bg-white rounded-2xl p-12 text-center border">
             <MessageCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500">

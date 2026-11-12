@@ -74,9 +74,9 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-      <div className="bg-gradient-to-r from-black to-gray-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 py-1 flex items-center justify-between text-sm">
+    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur-xl">
+      <div className="bg-blue-950 text-white">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2 text-xs sm:text-sm">
           <div className="flex items-center gap-4">
             <button onClick={() => setRegionOpen(!regionOpen)} className="flex items-center gap-1 hover:text-blue-200">
               <MapPin className="w-4 h-4" />
@@ -112,11 +112,11 @@ export default function Header() {
         )}
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-2">
+      <div className="mx-auto max-w-7xl px-4 py-3">
         <div className="flex items-center justify-between gap-4">
           <Link to="/" className="flex items-center gap-2 flex-shrink-0">
             <img src="/logo.png" alt="UstaTop" className="w-10 h-10 rounded-xl object-cover" />
-            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-700 bg-clip-text text-transparent hidden sm:block">UstaTop</span>
+            <span className="text-2xl font-extrabold tracking-tight text-blue-800 hidden sm:block">UstaTop</span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-1">
@@ -133,7 +133,7 @@ export default function Header() {
           </form>
 
           <div className="flex items-center gap-2">
-            <Link to="/create-job" className="hidden sm:flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 font-medium"><Plus className="w-5 h-5" /><span>{t('createJob')}</span></Link>
+            <Link to="/create-job" className="hidden sm:flex items-center gap-2 rounded-xl bg-blue-700 px-4 py-2.5 font-semibold text-white shadow-sm transition hover:bg-blue-800"><Plus className="w-5 h-5" /><span>{t('createJob')}</span></Link>
 
             {isLoggedIn && (
               <>

@@ -117,8 +117,8 @@ export default function Jobs() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4">
+    <div className="min-h-screen bg-slate-50 py-6 sm:py-10">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">{t('jobs')}</h1>
 
@@ -129,7 +129,7 @@ export default function Jobs() {
               placeholder={language === 'uz' ? 'Buyurtma qidirish...' : 'Поиск заявки...'}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-12 pr-4 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
             />
           </div>
 
@@ -143,7 +143,7 @@ export default function Jobs() {
         </div>
 
         {showFilters && (
-          <div className="bg-white rounded-2xl p-6 mb-8 border border-gray-200">
+          <div className="mb-8 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
             <div className="grid md:grid-cols-3 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -210,7 +210,7 @@ export default function Jobs() {
                 <Link
                   key={job.id}
                   to={`/job/${job.id}`}
-                  className="bg-white rounded-2xl p-6 hover:shadow-lg transition-shadow border border-gray-100 block"
+                  className="block rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-lg sm:p-6"
                 >
                   <div className="flex flex-col md:flex-row md:items-center gap-4">
                     <div className="w-full md:w-48 h-32 bg-gray-200 rounded-xl overflow-hidden flex-shrink-0">

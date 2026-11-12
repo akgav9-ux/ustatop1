@@ -15,12 +15,14 @@ export default function CreateJob() {
   const [area, setArea] = useState('');
   const [deadline, setDeadline] = useState('');
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState('');
   const navigate = useNavigate();
 
   const currentRegion = regions.find(r => r.id === selectedRegion);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError('');
     
     if (!user) {
       alert('Пожалуйста, войдите в систему');
@@ -28,8 +30,22 @@ export default function CreateJob() {
       return;
     }
 
+    const numericBudget = Number(budget);
+    const numericArea = area ? Number(area) : null;
     if (!title.trim() || !description.trim() || !category || !budget) {
-      alert('Пожалуйста, заполните все обязательные поля');
+      setFormError(language === 'uz' ? 'Barcha majburiy maydonlarni to‘ldiring.' : 'Заполните все обязательные поля.');
+      return;
+    }
+    if (!Number.isFinite(numericBudget) || numericBudget <= 0) {
+      setFormError(language === 'uz' ? 'Byudjet noldan katta bo‘lishi kerak.' : 'Бюджет должен быть больше нуля.');
+      return;
+    }
+    if (numericArea !== null && (!Number.isFinite(numericArea) || numericArea <= 0)) {
+      setFormError(language === 'uz' ? 'Maydonni to‘g‘ri kiriting.' : 'Укажите корректную площадь.');
+      return;
+    }
+    if (!currentRegion?.districts.some(district => district.id === selectedDistrict)) {
+      setFormError(language === 'uz' ? 'Tumanni tanlang.' : 'Выберите район.');
       return;
     }
 
@@ -39,15 +55,15 @@ export default function CreateJob() {
       const newOrder = {
         author_id: user?.id,
         author_name: user?.name || 'Аноним',
-        title_uz: title,
-        title_ru: title,
-        description_uz: description,
-        description_ru: description,
-        budget: parseInt(budget) || 0,
+        title_uz: title.trim(),
+        title_ru: title.trim(),
+        description_uz: description.trim(),
+        description_ru: description.trim(),
+        budget: numericBudget,
         category: category,
         region: selectedRegion,
         district: selectedDistrict,
-        area: area ? parseInt(area) : null,
+        area: numericArea,
         deadline: deadline || null,
         status: 'open',
         responses: 0,
@@ -63,7 +79,7 @@ export default function CreateJob() {
 
       if (error) {
         console.error('Ошибка при сохранении заказа:', error);
-        alert(`Ошибка: ${error.message}`);
+        setFormError(language === 'uz' ? 'Buyurtmani saqlab bo‘lmadi. Qayta urinib ko‘ring.' : 'Не удалось сохранить заявку. Попробуйте ещё раз.');
         setLoading(false);
         return;
       }
@@ -77,7 +93,7 @@ export default function CreateJob() {
       navigate('/jobs');
     } catch (err: any) {
       console.error('Ошибка:', err);
-      alert(`Ошибка: ${err.message}`);
+      setFormError(language === 'uz' ? 'Ulanishda xatolik. Internetni tekshiring.' : 'Ошибка соединения. Проверьте интернет.');
       setLoading(false);
     }
   };
@@ -118,6 +134,7 @@ export default function CreateJob() {
           <h1 className="text-2xl font-bold text-gray-900 mb-6">{t('createJob')}</h1>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {formError && <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{formError}</div>}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 {t('jobTitle')} *
@@ -214,6 +231,9 @@ export default function CreateJob() {
               </label>
               <input
                 type="number"
+                min="1"
+                step="1"
+                inputMode="numeric"
                 placeholder={t('budgetPlaceholder')}
                 value={budget}
                 onChange={(e) => setBudget(e.target.value)}
@@ -229,6 +249,9 @@ export default function CreateJob() {
                 </label>
                 <input
                   type="number"
+                  min="1"
+                  step="1"
+                  inputMode="numeric"
                   value={area}
                   onChange={(e) => setArea(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"

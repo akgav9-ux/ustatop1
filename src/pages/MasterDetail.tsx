@@ -105,10 +105,10 @@ export default function MasterDetail() {
                   <Phone className="w-5 h-5" />
                   {t('call')}
                 </a>
-                <button className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium">
+                <Link to={`/chat/${master.id}`} className="flex items-center gap-2 rounded-xl bg-blue-700 px-6 py-3 font-medium text-white transition-colors hover:bg-blue-800">
                   <MessageCircle className="w-5 h-5" />
                   {t('sendMessage')}
-                </button>
+                </Link>
               </div>
             </div>
           </div>

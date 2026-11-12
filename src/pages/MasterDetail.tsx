@@ -16,7 +16,7 @@ export default function MasterDetail() {
       setLoading(true);
       const { data, error } = await supabase
         .from('users')
-        .select('*')
+        .select('id, name, phone, avatar_url, category, rating, reviews, region, district, is_online, is_verified, about_uz, about_ru, experience, jobs_completed, services')
         .eq('id', id)
         .eq('role', 'master')
         .single();

@@ -10,7 +10,6 @@ export default function Home() {
   const { t, language, isLoggedIn } = useApp();
   const [recentJobs, setRecentJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     let active = true;

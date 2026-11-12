@@ -16,7 +16,6 @@ type MasterRecord = {
   district?: string | null;
   is_online?: boolean | null;
   is_verified?: boolean | null;
-  is_vip?: boolean | null;
   about_uz?: string | null;
   about_ru?: string | null;
   services?: Array<{name_uz?: string; name_ru?: string; nameUz?: string; nameRu?: string}> | null;

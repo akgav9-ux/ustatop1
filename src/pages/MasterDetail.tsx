@@ -90,23 +90,25 @@ export default function MasterDetail() {
                 <p className="text-gray-500 mt-1">
                   {(language === 'uz' ? currentCategory?.nameUz : currentCategory?.nameRu) || (master.services?.length ? (language === 'uz' ? 'Xizmatlar' : 'Услуги') : (language === 'uz' ? 'Mutaxassis' : 'Специалист'))}
                 </p>
-                <div className="flex items-center gap-4 text-gray-500 mt-2">
+                <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-slate-500">
+                  {(Number(master.reviews) > 0 || Number(master.rating) > 0) && (
+                    <span className="flex items-center gap-1">
+                      <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                      <span className="font-semibold text-slate-900">{Number(master.rating || 0).toFixed(1)}</span>
+                      <span>({master.reviews || 0} {t('review')})</span>
+                    </span>
+                  )}
                   <span className="flex items-center gap-1">
-                    <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                    <span className="font-medium text-gray-900">{master.rating}</span>
-                    <span>({master.reviews} {t('review')})</span>
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <MapPin className="w-4 h-4" />
+                    <MapPin className="h-4 w-4" />
                     {language === 'uz' ? currentRegion?.nameUz : currentRegion?.nameRu}
                   </span>
                 </div>
               </div>
               <div className="flex gap-3">
-                <a href={`tel:${master.phone}`} className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors font-medium">
-                  <Phone className="w-5 h-5" />
+                {master.phone && <a href={`tel:${master.phone}`} className="flex items-center gap-2 rounded-xl bg-green-600 px-4 py-3 font-medium text-white transition-colors hover:bg-green-700">
+                  <Phone className="h-5 w-5" />
                   {t('call')}
-                </a>
+                </a>}
                 <Link to={`/chat/${master.id}`} className="flex items-center gap-2 rounded-xl bg-blue-700 px-6 py-3 font-medium text-white transition-colors hover:bg-blue-800">
                   <MessageCircle className="w-5 h-5" />
                   {t('sendMessage')}
@@ -120,8 +122,8 @@ export default function MasterDetail() {
           <div className="md:col-span-2 space-y-6">
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-4">{t('aboutMe')}</h2>
-              <p className="text-gray-600">
-                {language === 'uz' ? master.about_uz : master.about_ru}
+              <p className="whitespace-pre-line text-gray-600">
+                {(language === 'uz' ? master.about_uz : master.about_ru) || (language === 'uz' ? 'Usta hali o‘zi haqida ma’lumot qo‘shmagan.' : 'Мастер пока не добавил описание о себе.')}
               </p>
             </div>
 
@@ -176,7 +178,7 @@ export default function MasterDetail() {
                     <p className="font-semibold">
                       {master.is_online
                         ? (language === 'uz' ? 'Hozir onlayn' : 'Сейчас онлайн')
-                        : (language === 'uz' ? '2 soat oldin' : '2 часа назад')}
+                        : (language === 'uz' ? 'Hozir oflayn' : 'Сейчас не в сети')}
                     </p>
                   </div>
                 </div>
@@ -185,10 +187,10 @@ export default function MasterDetail() {
 
             <div className="bg-white rounded-2xl p-6 border border-gray-100">
               <h3 className="font-semibold text-gray-900 mb-4">{t('contactMaster')}</h3>
-              <a href={`tel:${master.phone}`} className="flex items-center justify-center gap-2 w-full bg-green-600 text-white py-3 rounded-xl hover:bg-green-700 transition-colors font-medium mb-3">
-                <Phone className="w-5 h-5" />
+              {master.phone ? <a href={`tel:${master.phone}`} className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl bg-green-600 py-3 font-medium text-white transition-colors hover:bg-green-700">
+                <Phone className="h-5 w-5" />
                 {master.phone}
-              </a>
+              </a> : <p className="mb-3 text-center text-sm text-slate-500">{language === 'uz' ? 'Telefon raqam ko‘rsatilmagan' : 'Номер телефона не указан'}</p>}
               <button className="flex items-center justify-center gap-2 w-full bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition-colors font-medium">
                 <MessageCircle className="w-5 h-5" />
                 {t('sendMessage')}

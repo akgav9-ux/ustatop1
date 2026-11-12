@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabaseClient';
 import { Bell, ArrowLeft, CheckCircle } from 'lucide-react';
 
 export default function Notifications() {
-  const { t, user, language } = useApp();
+  const { user, language } = useApp();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);

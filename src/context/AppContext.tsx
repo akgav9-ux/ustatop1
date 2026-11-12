@@ -65,6 +65,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
+    document.documentElement.lang = language;
     try {
       localStorage.setItem('ustatop_language', language);
     } catch {

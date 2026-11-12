@@ -1,9 +1,28 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import { sampleMasters, categories, regions } from '../data';
-import { Star, MapPin, Crown, CheckCircle, Search, Filter } from 'lucide-react';
+import { categories, regions } from '../data';
+import { Star, MapPin, Crown, CheckCircle, Search, Filter, UserRound } from 'lucide-react';
 import RegionFilter from '../components/RegionFilter';
+import { supabase } from '../lib/supabaseClient';
+
+type MasterRecord = {
+  id: string;
+  name?: string;
+  avatar_url?: string | null;
+  category?: string | null;
+  rating?: number | null;
+  reviews?: number | null;
+  region?: string | null;
+  district?: string | null;
+  is_online?: boolean | null;
+  is_verified?: boolean | null;
+  is_vip?: boolean | null;
+  description_uz?: string | null;
+  description_ru?: string | null;
+  experience?: number | null;
+  jobs_completed?: number | null;
+};
 
 export default function Masters() {
   const { t, language, selectedRegion, selectedDistrict } = useApp();
@@ -12,195 +31,197 @@ export default function Masters() {
   const [categoryFilter, setCategoryFilter] = useState(searchParams.get('category') || '');
   const [sortBy, setSortBy] = useState('rating');
   const [showFilters, setShowFilters] = useState(false);
+  const [masters, setMasters] = useState<MasterRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
-  // Фильтрация
-  const filteredMasters = sampleMasters.filter(master => {
-    // Поиск
-    const matchesSearch = !searchQuery ||
-      master.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (language === 'uz' ? master.descriptionUz : master.descriptionRu).toLowerCase().includes(searchQuery.toLowerCase());
-    
-    // Категория
-    const matchesCategory = !categoryFilter || master.category === categoryFilter;
-    
-    // Регион (область И район)
-    const matchesRegion = !selectedRegion || master.region === selectedRegion;
-    const matchesDistrict = !selectedDistrict || master.district === selectedDistrict;
-    
-    return matchesSearch && matchesCategory && matchesRegion && matchesDistrict;
-  });
+  useEffect(() => {
+    let active = true;
+    const loadMasters = async () => {
+      setLoading(true);
+      setLoadError(false);
+      const { data, error } = await supabase
+        .from('masters')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-  // Сортировка
-  const sortedMasters = [...filteredMasters];
-  if (sortBy === 'rating') {
-    sortedMasters.sort((a, b) => b.rating - a.rating);
-  } else if (sortBy === 'reviews') {
-    sortedMasters.sort((a, b) => b.reviews - a.reviews);
-  } else if (sortBy === 'jobs') {
-    sortedMasters.sort((a, b) => b.jobsCompleted - a.jobsCompleted);
-  }
+      if (!active) return;
+      if (error) {
+        console.error('Ошибка загрузки мастеров:', error);
+        setMasters([]);
+        setLoadError(true);
+      } else {
+        setMasters((data || []) as MasterRecord[]);
+      }
+      setLoading(false);
+    };
 
-  // Получить название района
-  const getDistrictName = (regionId: string, districtId: string) => {
-    const region = regions.find(r => r.id === regionId);
-    const district = region?.districts.find(d => d.id === districtId);
+    loadMasters();
+    return () => { active = false; };
+  }, []);
+
+  const filteredMasters = useMemo(() => {
+    const query = searchQuery.trim().toLocaleLowerCase();
+    const filtered = masters.filter(master => {
+      const description = language === 'uz' ? master.description_uz : master.description_ru;
+      const matchesSearch = !query ||
+        (master.name || '').toLocaleLowerCase().includes(query) ||
+        (description || '').toLocaleLowerCase().includes(query);
+      const matchesCategory = !categoryFilter || master.category === categoryFilter;
+      const matchesRegion = !selectedRegion || master.region === selectedRegion;
+      const matchesDistrict = !selectedDistrict || master.district === selectedDistrict;
+      return matchesSearch && matchesCategory && matchesRegion && matchesDistrict;
+    });
+
+    return filtered.sort((a, b) => {
+      if (sortBy === 'reviews') return (b.reviews || 0) - (a.reviews || 0);
+      if (sortBy === 'jobs') return (b.jobs_completed || 0) - (a.jobs_completed || 0);
+      return (b.rating || 0) - (a.rating || 0);
+    });
+  }, [masters, searchQuery, categoryFilter, selectedRegion, selectedDistrict, sortBy, language]);
+
+  const getDistrictName = (regionId?: string | null, districtId?: string | null) => {
+    const region = regions.find(item => item.id === regionId);
+    const district = region?.districts.find(item => item.id === districtId);
     return language === 'uz' ? district?.nameUz : district?.nameRu;
+  };
+
+  const getRegionName = (regionId?: string | null) => {
+    const region = regions.find(item => item.id === regionId);
+    return language === 'uz' ? region?.nameUz : region?.nameRu;
   };
 
   return (
     <div className="min-h-screen bg-slate-50 py-6 sm:py-10">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">{t('masters')}</h1>
+        <div className="mb-6 sm:mb-8">
+          <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-blue-700">
+            {language === 'uz' ? 'UstaTop mutaxassislari' : 'Специалисты UstaTop'}
+          </p>
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">{t('masters')}</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
+            {language === 'uz'
+              ? 'Hududingizdagi xizmat ustalarini toping va ular bilan bevosita bogʻlaning.'
+              : 'Найдите исполнителя в своём районе и свяжитесь с ним напрямую.'}
+          </p>
+        </div>
 
-        {/* Поиск */}
         <div className="relative mb-4">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
           <input
-            type="text"
+            type="search"
             placeholder={t('search')}
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={event => setSearchQuery(event.target.value)}
             className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-12 pr-4 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
           />
         </div>
 
-        {/* Кнопка фильтров */}
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium mb-4"
-        >
-          <Filter className="w-5 h-5" />
-          {language === 'uz' ? 'Filtrlar' : 'Фильтры'}
-        </button>
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => setShowFilters(value => !value)}
+            aria-expanded={showFilters}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 font-semibold text-slate-700 shadow-sm transition hover:border-blue-200 hover:text-blue-700"
+          >
+            <Filter className="h-4 w-4" />
+            {language === 'uz' ? 'Filtrlar' : 'Фильтры'}
+          </button>
+          <span className="text-sm text-slate-500">
+            {language === 'uz' ? 'Topildi:' : 'Найдено:'} {filteredMasters.length}
+          </span>
+        </div>
 
-        {/* Фильтры */}
         {showFilters && (
-          <div className="mb-8 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
-            <div className="grid md:grid-cols-3 gap-6">
-              {/* Категория */}
-              <div>
-                <label className="block text-sm font-medium mb-2">Категория</label>
-                <select
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="w-full px-4 py-2 border rounded-xl"
-                >
-                  <option value="">Все категории</option>
-                  {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>
-                      {language === 'uz' ? cat.nameUz : cat.nameRu}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Регион (двухуровневый) */}
-              <div className="md:col-span-1">
-                <label className="block text-sm font-medium mb-2">Регион</label>
-                <RegionFilter />
-              </div>
-
-              {/* Сортировка */}
-              <div>
-                <label className="block text-sm font-medium mb-2">Сортировка</label>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="w-full px-4 py-2 border rounded-xl"
-                >
-                  <option value="rating">По рейтингу</option>
-                  <option value="reviews">По отзывам</option>
-                  <option value="jobs">По количеству работ</option>
-                </select>
-              </div>
+          <div className="mb-7 grid gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-3 sm:p-6">
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-700">
+                {language === 'uz' ? 'Kategoriya' : 'Категория'}
+              </label>
+              <select value={categoryFilter} onChange={event => setCategoryFilter(event.target.value)} className="w-full rounded-xl border border-slate-200 px-3 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100">
+                <option value="">{language === 'uz' ? 'Barcha kategoriyalar' : 'Все категории'}</option>
+                {categories.map(category => <option key={category.id} value={category.id}>{language === 'uz' ? category.nameUz : category.nameRu}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-700">{language === 'uz' ? 'Hudud' : 'Регион и район'}</label>
+              <RegionFilter />
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-700">{language === 'uz' ? 'Saralash' : 'Сортировка'}</label>
+              <select value={sortBy} onChange={event => setSortBy(event.target.value)} className="w-full rounded-xl border border-slate-200 px-3 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100">
+                <option value="rating">{language === 'uz' ? 'Reyting bo‘yicha' : 'По рейтингу'}</option>
+                <option value="reviews">{language === 'uz' ? 'Sharhlar bo‘yicha' : 'По отзывам'}</option>
+                <option value="jobs">{language === 'uz' ? 'Ishlar soni bo‘yicha' : 'По числу работ'}</option>
+              </select>
             </div>
           </div>
         )}
 
-        {/* Результатов */}
-        <div className="mb-4 text-gray-500 text-sm">
-          Найдено: {sortedMasters.length} мастеров
-        </div>
-
-        {/* Список мастеров */}
-        <div className="space-y-4">
-          {sortedMasters.length > 0 ? sortedMasters.map(master => {
-            const regionName = language === 'uz' 
-              ? regions.find(r => r.id === master.region)?.nameUz 
-              : regions.find(r => r.id === master.region)?.nameRu;
-            const districtName = getDistrictName(master.region, master.district);
-            
-            return (
-              <div key={master.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-lg sm:p-6">
-                <div className="flex flex-col md:flex-row gap-6">
-                  {/* Аватар и ссылка на профиль */}
-                  <Link to={`/master/${master.id}`} className="relative block">
-                    <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-3xl font-bold text-white shadow-sm sm:h-24 sm:w-24">
-                      {master.name.charAt(0)}
-                    </div>
-                    {master.isOnline && (
-                      <span className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 border-2 border-white rounded-full"></span>
-                    )}
-                  </Link>
-
-                  {/* Информация - ссылка на профиль */}
-                  <div className="flex-1">
-                    <Link to={`/master/${master.id}`} className="block">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-xl font-semibold">{master.name}</h3>
-                        {master.isVerified && <CheckCircle className="w-5 h-5 text-blue-500" />}
-                        {master.isVIP && <Crown className="w-5 h-5 text-yellow-500" />}
-                      </div>
-                      <p className="text-gray-500 mb-2">
-                        {language === 'uz'
-                          ? categories.find(c => c.id === master.category)?.nameUz
-                          : categories.find(c => c.id === master.category)?.nameRu}
-                      </p>
-                      <div className="flex items-center gap-4 text-sm">
-                        <div className="flex items-center gap-1">
-                          <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                          <span>{master.rating}</span>
-                          <span className="text-gray-400">({master.reviews})</span>
-                        </div>
-                        <span className="text-gray-400">|</span>
-                        <span>{master.experience} лет</span>
-                        <span className="text-gray-400">|</span>
-                        <span>{master.jobsCompleted} работ</span>
-                      </div>
-                      <div className="flex items-center gap-1 mt-2 text-sm text-gray-500">
-                        <MapPin className="w-4 h-4" />
-                        <span>{regionName}, {districtName}</span>
-                      </div>
-                      <p className="text-gray-600 mt-2 line-clamp-2">
-                        {language === 'uz' ? master.descriptionUz : master.descriptionRu}
-                      </p>
+        {loading ? (
+          <div className="flex min-h-56 items-center justify-center rounded-2xl border border-slate-200 bg-white">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-100 border-t-blue-700" />
+          </div>
+        ) : loadError ? (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center text-sm text-amber-800">
+            {language === 'uz' ? 'Ustalarni yuklab bo‘lmadi. Keyinroq qayta urinib ko‘ring.' : 'Не удалось загрузить мастеров. Попробуйте обновить страницу позже.'}
+          </div>
+        ) : filteredMasters.length > 0 ? (
+          <div className="grid gap-4 lg:grid-cols-2">
+            {filteredMasters.map(master => {
+              const category = categories.find(item => item.id === master.category);
+              const description = language === 'uz' ? master.description_uz : master.description_ru;
+              return (
+                <article key={master.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-lg sm:p-5">
+                  <div className="flex gap-4">
+                    <Link to={`/master/${master.id}`} className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-blue-50 sm:h-24 sm:w-24">
+                      {master.avatar_url
+                        ? <img src={master.avatar_url} alt={master.name || 'Master'} className="h-full w-full object-cover" />
+                        : <span className="flex h-full w-full items-center justify-center text-blue-700"><UserRound className="h-9 w-9" /></span>}
+                      {master.is_online && <span className="absolute bottom-1 right-1 h-3.5 w-3.5 rounded-full border-2 border-white bg-emerald-500" />}
                     </Link>
+                    <div className="min-w-0 flex-1">
+                      <Link to={`/master/${master.id}`} className="group">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <h2 className="truncate text-lg font-bold text-slate-900 group-hover:text-blue-700">{master.name || (language === 'uz' ? 'Usta' : 'Мастер')}</h2>
+                          {master.is_verified && <CheckCircle className="h-4 w-4 shrink-0 text-blue-600" />}
+                          {master.is_vip && <Crown className="h-4 w-4 shrink-0 text-amber-500" />}
+                        </div>
+                        <p className="mt-1 text-sm text-slate-500">{language === 'uz' ? category?.nameUz : category?.nameRu}</p>
+                      </Link>
+                      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                        <span className="inline-flex items-center gap-1"><Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />{master.rating || 0} ({master.reviews || 0})</span>
+                        <span>{master.experience || 0} {language === 'uz' ? 'yil tajriba' : 'лет опыта'}</span>
+                        <span>{master.jobs_completed || 0} {language === 'uz' ? 'ish' : 'работ'}</span>
+                      </div>
+                      <p className="mt-2 flex items-center gap-1 text-xs text-slate-500"><MapPin className="h-3.5 w-3.5 shrink-0" />{getRegionName(master.region)}, {getDistrictName(master.region, master.district)}</p>
+                    </div>
                   </div>
-
-                  {/* Статус и кнопка Написать */}
-                  <div className="flex flex-col gap-2">
-                    <span className={`px-3 py-1 rounded-full text-sm text-center ${
-                      master.isOnline ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-500'
-                    }`}>
-                      {master.isOnline ? t('online') : t('recently')}
+                  {description && <p className="mt-4 line-clamp-2 text-sm leading-6 text-slate-600">{description}</p>}
+                  <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
+                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${master.is_online ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                      {master.is_online ? t('online') : t('recently')}
                     </span>
-                    <Link
-                      to={`/chat/${master.id}`}
-                      className="block rounded-xl bg-blue-700 px-6 py-3 text-center font-semibold text-white shadow-sm transition hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-200"
-                      onClick={(e) => e.stopPropagation()}
-                    >
+                    <Link to={`/chat/${master.id}`} className="rounded-xl bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-800">
                       {t('write')}
                     </Link>
                   </div>
-                </div>
-              </div>
-            );
-          }) : (
-            <div className="bg-white rounded-2xl p-12 text-center border">
-              <p className="text-gray-500">Мастеров не найдено</p>
-            </div>
-          )}
-        </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-slate-200 bg-white px-5 py-14 text-center shadow-sm">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-700"><UserRound className="h-7 w-7" /></div>
+            <h2 className="text-lg font-bold text-slate-900">{language === 'uz' ? 'Ustalar hozircha topilmadi' : 'Пока нет мастеров по выбранным условиям'}</h2>
+            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
+              {language === 'uz' ? 'Boshqa hudud yoki kategoriya tanlang. Yangi ustalar ro‘yxatdan o‘tgan sari shu yerda ko‘rinadi.' : 'Попробуйте выбрать другой регион или категорию. Новые специалисты появятся здесь после регистрации.'}
+            </p>
+            <button type="button" onClick={() => { setSearchQuery(''); setCategoryFilter(''); }} className="mt-5 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+              {language === 'uz' ? 'Filtrlarni tozalash' : 'Сбросить поиск и категорию'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

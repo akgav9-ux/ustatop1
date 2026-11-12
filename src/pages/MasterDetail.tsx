@@ -1,7 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { categories, regions } from '../data';
-import { Star, MapPin, Crown, CheckCircle, Phone, MessageCircle, Briefcase, Clock, ArrowLeft } from 'lucide-react';
+import { Star, MapPin, CheckCircle, Phone, MessageCircle, Briefcase, Clock, ArrowLeft } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
@@ -85,7 +85,6 @@ export default function MasterDetail() {
                 <div className="flex items-center gap-3">
                   <h1 className="text-2xl font-bold text-gray-900">{master.name}</h1>
                   {master.is_verified && <CheckCircle className="w-6 h-6 text-blue-500" />}
-                  {master.is_vip && <Crown className="w-6 h-6 text-yellow-500" />}
                 </div>
                 <p className="text-gray-500 mt-1">
                   {(language === 'uz' ? currentCategory?.nameUz : currentCategory?.nameRu) || (master.services?.length ? (language === 'uz' ? 'Xizmatlar' : 'Услуги') : (language === 'uz' ? 'Mutaxassis' : 'Специалист'))}

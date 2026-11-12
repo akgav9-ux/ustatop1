@@ -117,7 +117,7 @@ export default function ProfileResponses() {
 
         {loadError ? (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-800">
-            {language === 'uz' ? 'Oткликlarni yuklab bo‘lmadi. Keyinroq qayta urinib ko‘ring.' : 'Не удалось загрузить отклики. Попробуйте позже.'}
+            {language === 'uz' ? 'Javoblarni yuklab bo‘lmadi. Keyinroq qayta urinib ko‘ring.' : 'Не удалось загрузить отклики. Попробуйте позже.'}
           </div>
         ) : myResponses.length === 0 ? (
           <div className="rounded-2xl border border-slate-200 bg-white px-5 py-14 text-center shadow-sm">
@@ -137,7 +137,7 @@ export default function ProfileResponses() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <h2 className="text-lg font-bold text-slate-900">
-                      {language === 'uz' ? response.order?.title_uz : response.order?.title_ru}
+                      {(language === 'uz' ? response.order?.title_uz : response.order?.title_ru) || (language === 'uz' ? 'Buyurtma mavjud emas' : 'Заявка недоступна')}
                     </h2>
                     <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-500">
                       <span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{new Date(response.created_at).toLocaleDateString(language === 'uz' ? 'uz-UZ' : 'ru-RU')}</span>

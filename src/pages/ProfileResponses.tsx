@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabaseClient';
+import { regions } from '../data';
 import { MapPin, Clock, ArrowLeft, CheckCircle, XCircle, MessageSquare } from 'lucide-react';
 
 type ResponseRecord = {
@@ -83,6 +84,11 @@ export default function ProfileResponses() {
     return () => { active = false; };
   }, [user?.id]);
 
+  const getRegionName = (regionId?: string) => {
+    const region = regions.find(item => item.id === regionId);
+    return (language === 'uz' ? region?.nameUz : region?.nameRu) || regionId || '';
+  };
+
   const formatPrice = (price?: number | null) =>
     price ? `${Number(price).toLocaleString(language === 'uz' ? 'uz-UZ' : 'ru-RU')} ${t('sum')}` : '—';
 
@@ -146,7 +152,7 @@ export default function ProfileResponses() {
                     </h2>
                     <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-500">
                       <span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{new Date(response.created_at).toLocaleDateString(language === 'uz' ? 'uz-UZ' : 'ru-RU')}</span>
-                      {response.order?.region && <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{response.order.region}</span>}
+                      {response.order?.region && <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{getRegionName(response.order.region)}</span>}
                     </div>
                   </div>
                   <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold ${response.status === 'accepted' ? 'bg-emerald-50 text-emerald-700' : response.status === 'rejected' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'}`}>

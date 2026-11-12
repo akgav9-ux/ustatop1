@@ -8,6 +8,7 @@ export default function Notifications() {
   const { t, user, language } = useApp();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -20,6 +21,7 @@ export default function Notifications() {
 
   const loadNotifications = async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const { data, error } = await supabase
         .from('notifications')
@@ -27,7 +29,10 @@ export default function Notifications() {
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
 
-      if (!error) {
+      if (error) {
+        console.error('Ошибка загрузки уведомлений:', error);
+        setLoadError(true);
+      } else {
         setNotifications(data || []);
       }
     } catch (err) {
@@ -38,26 +43,34 @@ export default function Notifications() {
   };
 
   const markAsRead = async (id: string) => {
-    await supabase
+    if (!user?.id) return;
+    const { error } = await supabase
       .from('notifications')
       .update({ is_read: true })
-      .eq('id', id);
-    
-    setNotifications(prev => 
-      prev.map(n => n.id === id ? { ...n, is_read: true } : n)
-    );
+      .eq('id', id)
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('Не удалось отметить уведомление:', error);
+      return;
+    }
+    setNotifications(prev => prev.map(item => item.id === id ? { ...item, is_read: true } : item));
+    window.dispatchEvent(new Event('refreshCounters'));
   };
 
   const markAllAsRead = async () => {
-    await supabase
+    if (!user?.id) return;
+    const { error } = await supabase
       .from('notifications')
       .update({ is_read: true })
       .eq('user_id', user?.id)
       .eq('is_read', false);
-    
-    setNotifications(prev => 
-      prev.map(n => ({ ...n, is_read: true }))
-    );
+    if (error) {
+      console.error('Не удалось отметить уведомления:', error);
+      return;
+    }
+    setNotifications(prev => prev.map(item => ({ ...item, is_read: true })));
+    window.dispatchEvent(new Event('refreshCounters'));
   };
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
@@ -98,6 +111,8 @@ export default function Notifications() {
             <p className="text-slate-700">{language === 'uz' ? 'Bildirishnomalarni ko‘rish uchun tizimga kiring.' : 'Войдите, чтобы просматривать уведомления.'}</p>
             <Link to="/login" className="mt-5 inline-flex rounded-xl bg-blue-700 px-5 py-3 font-semibold text-white">{language === 'uz' ? 'Kirish' : 'Войти'}</Link>
           </div>
+        ) : loadError ? (
+          <div role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-800">{language === 'uz' ? 'Bildirishnomalarni yuklab bo‘lmadi. Qayta urinib ko‘ring.' : 'Не удалось загрузить уведомления. Попробуйте ещё раз.'}</div>
         ) : notifications.length === 0 ? (
           <div className="bg-white rounded-2xl p-12 text-center border">
             <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />

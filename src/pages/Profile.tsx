@@ -104,6 +104,8 @@ function AvatarUpload({ currentAvatar, onAvatarChange, size = 120 }: {
       />
       {preview && (
         <button
+          type="button"
+          aria-label={t('remove') || 'Remove profile photo'}
           onClick={handleRemove}
           className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
         >

@@ -576,16 +576,7 @@ export default function Profile() {
               </nav>
             </div>
 
-            {!user.isVIP && user.role === 'master' && (
-              <div className="bg-gradient-to-r from-yellow-500 to-amber-600 rounded-2xl p-6 text-white">
-                <Crown className="w-10 h-10 mb-3" />
-                <h3 className="font-bold text-lg mb-2">{t('becomeVIP')}</h3>
-                <p className="text-yellow-100 text-sm mb-4">{t('vipDesc')}</p>
-                <button className="w-full bg-white text-amber-600 py-2 rounded-xl font-semibold hover:bg-yellow-50 transition-colors">
-                  {t('becomeVIPBtn')}
-                </button>
-              </div>
-            )}
+
           </div>
         </div>
       </div>

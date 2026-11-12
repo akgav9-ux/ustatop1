@@ -19,6 +19,7 @@ interface AppUser {
   role: string;
   region?: string;
   district?: string;
+  category?: string;
   isVerified?: boolean;
   aboutUz?: string;
   aboutRu?: string;
@@ -88,6 +89,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           role: userData.role,
           region: userData.region,
           district: userData.district,
+          category: userData.category,
           isVerified: userData.is_verified,
           aboutUz: userData.about_uz,
           aboutRu: userData.about_ru,

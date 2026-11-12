@@ -130,7 +130,7 @@ export default function MasterDetail() {
             <div className="bg-white rounded-2xl p-6 border border-gray-100">
               <h2 className="text-xl font-bold text-gray-900 mb-4">{t('services')}</h2>
               <div className="space-y-3">
-                {master.services?.map((service: any, index: number) => (
+                {master.services?.length ? master.services.map((service: any, index: number) => (
                   <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
                     <span className="font-medium text-gray-900">
                       {language === 'uz' ? service.nameUz : service.nameRu}
@@ -139,7 +139,7 @@ export default function MasterDetail() {
                       {service.price.toLocaleString('ru-RU')} {t('sum')}
                     </span>
                   </div>
-                ))}
+                )) : <p className="text-sm text-slate-500">{language === 'uz' ? 'Usta hali xizmatlar ro‘yxatini qo‘shmagan.' : 'Мастер пока не добавил список услуг.'}</p>}
               </div>
             </div>
 
@@ -161,14 +161,14 @@ export default function MasterDetail() {
                   <Briefcase className="w-5 h-5 text-blue-500" />
                   <div>
                     <p className="text-sm text-gray-500">{t('experience')}</p>
-                    <p className="font-semibold">{master.experience} {t('years')}</p>
+                    <p className="font-semibold">{master.experience ? `${master.experience} ${t('years')}` : '—'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-green-500" />
                   <div>
                     <p className="text-sm text-gray-500">{t('completedJobs')}</p>
-                    <p className="font-semibold">{master.jobs_completed}</p>
+                    <p className="font-semibold">{master.jobs_completed ?? '—'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -191,10 +191,10 @@ export default function MasterDetail() {
                 <Phone className="h-5 w-5" />
                 {master.phone}
               </a> : <p className="mb-3 text-center text-sm text-slate-500">{language === 'uz' ? 'Telefon raqam ko‘rsatilmagan' : 'Номер телефона не указан'}</p>}
-              <button className="flex items-center justify-center gap-2 w-full bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition-colors font-medium">
-                <MessageCircle className="w-5 h-5" />
+              <Link to={`/chat/${master.id}`} className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-700 py-3 font-medium text-white transition-colors hover:bg-blue-800">
+                <MessageCircle className="h-5 w-5" />
                 {t('sendMessage')}
-              </button>
+              </Link>
             </div>
           </div>
         </div>

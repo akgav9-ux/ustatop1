@@ -12,6 +12,9 @@ export default function Notifications() {
   useEffect(() => {
     if (user) {
       loadNotifications();
+    } else {
+      setNotifications([]);
+      setLoading(false);
     }
   }, [user]);
 
@@ -68,8 +71,8 @@ export default function Notifications() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-2xl mx-auto px-4">
+    <div className="min-h-screen bg-slate-50 py-6 sm:py-10">
+      <div className="mx-auto max-w-2xl px-4 sm:px-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <Link to="/" className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
@@ -89,7 +92,13 @@ export default function Notifications() {
           )}
         </div>
 
-        {notifications.length === 0 ? (
+        {!user ? (
+          <div className="rounded-2xl border border-slate-200 bg-white px-5 py-12 text-center shadow-sm">
+            <Bell className="mx-auto mb-4 h-12 w-12 text-slate-300" />
+            <p className="text-slate-700">{language === 'uz' ? 'Bildirishnomalarni ko‘rish uchun tizimga kiring.' : 'Войдите, чтобы просматривать уведомления.'}</p>
+            <Link to="/login" className="mt-5 inline-flex rounded-xl bg-blue-700 px-5 py-3 font-semibold text-white">{language === 'uz' ? 'Kirish' : 'Войти'}</Link>
+          </div>
+        ) : notifications.length === 0 ? (
           <div className="bg-white rounded-2xl p-12 text-center border">
             <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500">
@@ -101,12 +110,11 @@ export default function Notifications() {
             {notifications.map(notif => {
               const Content = (
                 <div
-                  className={`bg-white rounded-2xl p-4 border transition-all cursor-pointer ${
+                  className={`rounded-2xl border bg-white p-4 shadow-sm transition-all cursor-pointer ${
                     !notif.is_read ? 'border-blue-300 shadow-sm' : 'border-gray-100'
                   }`}
                   onClick={() => {
                     markAsRead(notif.id);
-                    if (notif.link) window.location.href = notif.link;
                   }}
                 >
                   <div className="flex gap-3">

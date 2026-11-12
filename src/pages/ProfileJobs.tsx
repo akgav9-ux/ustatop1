@@ -17,7 +17,7 @@ export default function ProfileJobs() {
     } else {
       setLoading(false);
     }
-  }, [user]);
+  }, [user?.id]);
 
   const loadMyJobs = async () => {
     setLoading(true);

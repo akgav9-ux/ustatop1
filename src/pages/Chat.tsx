@@ -12,6 +12,8 @@ export default function Chat() {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [receiver, setReceiver] = useState<any>(null);
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState('');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatId = user?.id && userId ? [user.id, userId].sort().join('-') : null;
@@ -23,12 +25,13 @@ export default function Chat() {
   }, [userId]);
 
   const loadMessages = async () => {
-    if (!chatId) return;
-    const { data } = await supabase
+    if (!chatId) { setLoading(false); return; }
+    const { data, error } = await supabase
       .from('messages')
       .select('*')
       .eq('chat_id', chatId)
       .order('created_at', { ascending: true });
+    if (error) console.error('Ошибка загрузки сообщений:', error);
     setMessages(data || []);
     setLoading(false);
     setTimeout(() => messagesEndRef.current?.scrollIntoView(), 100);
@@ -68,7 +71,7 @@ export default function Chat() {
       .on('postgres_changes', 
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` },
         (payload) => {
-          setMessages(prev => [...prev, payload.new]);
+          setMessages(prev => prev.some(message => message.id === payload.new.id) ? prev : [...prev, payload.new]);
           setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
           if (payload.new.receiver_id === user?.id) {
             window.dispatchEvent(new Event('messageRead'));
@@ -82,7 +85,9 @@ export default function Chat() {
   }, [chatId, user?.id]);
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !user?.id || !userId || !chatId) return;
+    if (!newMessage.trim() || !user?.id || !userId || !chatId || sending || user.id === userId) return;
+    setSending(true);
+    setSendError('');
 
     const message = {
       chat_id: chatId,
@@ -94,13 +99,18 @@ export default function Chat() {
       created_at: new Date().toISOString(),
     };
 
-    setNewMessage('');
-    const { error } = await supabase.from('messages').insert([message]);
-    if (!error) {
+    const { data, error } = await supabase.from('messages').insert([message]).select().single();
+    if (error) {
+      console.error('Ошибка отправки сообщения:', error);
+      setSendError(language === 'uz' ? 'Xabar yuborilmadi. Qayta urinib ko‘ring.' : 'Не удалось отправить сообщение. Попробуйте ещё раз.');
+    } else {
+      setNewMessage('');
+      if (data) setMessages(prev => prev.some(item => item.id === data.id) ? prev : [...prev, data]);
       window.dispatchEvent(new Event('messageSent'));
       window.dispatchEvent(new Event('refreshCounters'));
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
     }
-    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+    setSending(false);
   };
 
   if (!isLoggedIn || !user) {
@@ -120,7 +130,7 @@ export default function Chat() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-100">
+    <div className="flex h-[100dvh] flex-col bg-slate-100">
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="px-4 py-3 flex items-center gap-3">
           <Link to="/messages" className="p-1 -ml-2">
@@ -132,7 +142,7 @@ export default function Chat() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <p className="text-gray-400 text-center">
@@ -159,8 +169,9 @@ export default function Chat() {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="bg-white border-t border-gray-200 p-3 safe-bottom">
-        <div className="flex gap-2 items-center">
+      <div className="border-t border-slate-200 bg-white p-3 safe-bottom">
+        {sendError && <p role="alert" className="mb-2 text-sm text-rose-600">{sendError}</p>}
+        <div className="flex items-center gap-2">
           <input
             type="text"
             value={newMessage}
@@ -172,10 +183,10 @@ export default function Chat() {
           />
           <button
             onClick={sendMessage}
-            disabled={!newMessage.trim()}
+            disabled={!newMessage.trim() || sending}
             className="bg-blue-500 text-white w-11 h-11 rounded-2xl flex items-center justify-center hover:bg-blue-600 transition-colors disabled:opacity-50"
           >
-            <Send className="w-5 h-5" />
+            {sending ? <span className="text-xs font-semibold">...</span> : <Send className="w-5 h-5" />}
           </button>
         </div>
       </div>

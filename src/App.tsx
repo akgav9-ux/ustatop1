@@ -53,15 +53,6 @@ function NotFound() {
 
 function App() {
   useEffect(() => {
-    const testSupabase = async () => {
-      const { data, error } = await supabase.from('users').select('*').limit(1);
-      if (error) console.error('Ошибка:', error);
-      else console.log('Supabase подключен успешно!', data);
-    };
-    testSupabase();
-  }, []);
-
-  useEffect(() => {
     const preload = async () => {
       const cached = cache.getOrders();
       if (!cached) {

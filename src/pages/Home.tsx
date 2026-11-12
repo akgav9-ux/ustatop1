@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabaseClient';
 import { cache } from '../lib/cache';
 
 export default function Home() {
-  const { t, language, user, isLoggedIn } = useApp();
+  const { t, language, isLoggedIn } = useApp();
   const [recentJobs, setRecentJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');

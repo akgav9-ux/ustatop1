@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import { Phone, MapPin, Star, Briefcase, Crown, CheckCircle, Edit2, Settings, LogOut, Heart, MessageCircle, Clock, Camera, X, Plus, Edit3, Trash2 } from 'lucide-react';
+import { Phone, MapPin, Star, Briefcase, CheckCircle, Edit2, Settings, LogOut, Heart, MessageCircle, Clock, Camera, X, Plus, Edit3, Trash2 } from 'lucide-react';
 import { regions } from '../data';
 import { supabase } from '../lib/supabaseClient';
 
@@ -330,17 +330,11 @@ export default function Profile() {
                   onAvatarChange={handleAvatarChange}
                   size={120}
                 />
-                {user.isVIP && (
-                  <div className="absolute -top-2 -right-2 bg-yellow-500 text-white p-2 rounded-full">
-                    <Crown className="w-5 h-5" />
-                  </div>
-                )}
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-3">
                   <h1 className="text-2xl font-bold text-gray-900">{name || user.name}</h1>
                   {user.isVerified && <CheckCircle className="w-6 h-6 text-blue-500" />}
-                  {user.isVIP && <Crown className="w-6 h-6 text-yellow-500" />}
                 </div>
                 <div className="flex items-center gap-4 text-gray-500 mt-2 flex-wrap">
                   <span className="flex items-center gap-1">

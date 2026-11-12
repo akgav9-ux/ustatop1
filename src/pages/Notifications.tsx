@@ -151,7 +151,7 @@ export default function Notifications() {
 
               if (notif.link) {
                 return (
-                  <Link key={notif.id} to={notif.link} onClick={() => markAsRead(notif.id)}>
+                  <Link key={notif.id} to={notif.link}>
                     {Content}
                   </Link>
                 );

@@ -151,7 +151,7 @@ export default function Profile() {
     try {
       const { data, error: loadError } = await supabase
         .from('users')
-        .select('id, name, phone, avatar_url, about_uz, about_ru, experience, services, category, is_verified, role, region, district, rating, jobs_completed, favorites_count')
+        .select('id, name, phone, avatar_url, about_uz, about_ru, experience, services, category, is_verified, role, region, district, rating, jobs_completed, ')
         .eq('id', user.id)
         .single();
 
@@ -466,7 +466,7 @@ export default function Profile() {
             </div>
             <div className="bg-white rounded-2xl p-6 border border-gray-100 text-center">
               <Heart className="w-8 h-8 text-red-500 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-gray-900">{user.favoritesCount ?? '—'}</p>
+              <p className="text-2xl font-bold text-gray-900">—</p>
               <p className="text-sm text-gray-500">{t('favorites')}</p>
             </div>
           </div>

@@ -172,7 +172,7 @@ export default function Masters() {
           <div className="grid gap-4 lg:grid-cols-2">
             {filteredMasters.map(master => {
               const category = categories.find(item => item.id === master.category);
-              const description = language === 'uz' ? master.description_uz : master.description_ru;
+              const description = language === 'uz' ? master.about_uz : master.about_ru;
               return (
                 <article key={master.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-lg sm:p-5">
                   <div className="flex gap-4">

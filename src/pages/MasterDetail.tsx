@@ -59,14 +59,14 @@ export default function MasterDetail() {
   const currentCategory = categories.find(c => c.id === master.category);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
+    <div className="min-h-screen bg-slate-50 py-6 sm:py-10">
+      <div className="mx-auto max-w-4xl px-4 sm:px-6">
         <Link to="/masters" className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6">
           <ArrowLeft className="w-5 h-5" />
           {t('masters')}
         </Link>
 
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+        <div className="mb-6 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
           <div className="bg-gradient-to-r from-blue-600 to-indigo-700 h-32"></div>
           <div className="px-8 pb-8">
             <div className="flex flex-col md:flex-row md:items-end gap-6 -mt-16">
@@ -115,7 +115,7 @@ export default function MasterDetail() {
 
         <div className="grid md:grid-cols-3 gap-6">
           <div className="md:col-span-2 space-y-6">
-            <div className="bg-white rounded-2xl p-6 border border-gray-100">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-4">{t('aboutMe')}</h2>
               <p className="text-gray-600">
                 {language === 'uz' ? master.description_uz : master.description_ru}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { categories, regions } from '../data';
 import { MapPin, Clock, Search, Filter, Briefcase } from 'lucide-react';
@@ -8,8 +8,9 @@ import { cache } from '../lib/cache';
 
 export default function Jobs() {
   const { t, language, user } = useApp();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
+  const [searchParams] = useSearchParams();
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
+  const [categoryFilter, setCategoryFilter] = useState(searchParams.get('category') || '');
   const [regionFilter, setRegionFilter] = useState('');
   const [districtFilter, setDistrictFilter] = useState('');
   const [showFilters, setShowFilters] = useState(false);
@@ -72,7 +73,8 @@ export default function Jobs() {
       ((language === 'uz' ? job.title_uz : job.title_ru) || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       ((language === 'uz' ? job.description_uz : job.description_ru) || '').toLowerCase().includes(searchQuery.toLowerCase());
     
-    const matchesCategory = !categoryFilter || job.category === categoryFilter;
+    const selectedCategory = categories.find(category => category.id === categoryFilter);
+    const matchesCategory = !categoryFilter || job.category === categoryFilter || job.category === selectedCategory?.nameUz || job.category === selectedCategory?.nameRu;
     const matchesRegion = !regionFilter || job.region === regionFilter;
     const matchesDistrict = !districtFilter || job.district === districtFilter;
     

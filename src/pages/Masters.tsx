@@ -18,8 +18,9 @@ type MasterRecord = {
   is_online?: boolean | null;
   is_verified?: boolean | null;
   is_vip?: boolean | null;
-  description_uz?: string | null;
-  description_ru?: string | null;
+  about_uz?: string | null;
+  about_ru?: string | null;
+  services?: Array<{name_uz?: string; name_ru?: string; nameUz?: string; nameRu?: string}> | null;
   experience?: number | null;
   jobs_completed?: number | null;
 };
@@ -64,10 +65,10 @@ export default function Masters() {
   const filteredMasters = useMemo(() => {
     const query = searchQuery.trim().toLocaleLowerCase();
     const filtered = masters.filter(master => {
-      const description = language === 'uz' ? master.description_uz : master.description_ru;
+      const description = language === 'uz' ? master.about_uz : master.about_ru;
       const matchesSearch = !query ||
         (master.name || '').toLocaleLowerCase().includes(query) ||
-        (description || '').toLocaleLowerCase().includes(query);
+        (description || '').toLocaleLowerCase().includes(query) || (master.services || []).some(service => ((language === 'uz' ? service.nameUz || service.name_uz : service.nameRu || service.name_ru) || '').toLocaleLowerCase().includes(query));
       const matchesCategory = !categoryFilter || master.category === categoryFilter;
       const matchesRegion = !selectedRegion || master.region === selectedRegion;
       const matchesDistrict = !selectedDistrict || master.district === selectedDistrict;
@@ -188,11 +189,11 @@ export default function Masters() {
                           {master.is_verified && <CheckCircle className="h-4 w-4 shrink-0 text-blue-600" />}
                           {master.is_vip && <Crown className="h-4 w-4 shrink-0 text-amber-500" />}
                         </div>
-                        <p className="mt-1 text-sm text-slate-500">{language === 'uz' ? category?.nameUz : category?.nameRu}</p>
+                        <p className="mt-1 text-sm text-slate-500">{(language === 'uz' ? category?.nameUz : category?.nameRu) || (master.services?.length ? (language === 'uz' ? 'Xizmatlar' : 'Услуги') : (language === 'uz' ? 'Mutaxassis' : 'Специалист'))}</p>
                       </Link>
                       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
                         <span className="inline-flex items-center gap-1"><Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />{master.rating || 0} ({master.reviews || 0})</span>
-                        <span>{master.experience || 0} {language === 'uz' ? 'yil tajriba' : 'лет опыта'}</span>
+                        <span>{master.experience ? `${master.experience} ${language === 'uz' ? 'yil tajriba' : 'лет опыта'}` : (language === 'uz' ? 'Profil' : 'Профиль')}</span>
                         <span>{master.jobs_completed || 0} {language === 'uz' ? 'ish' : 'работ'}</span>
                       </div>
                       <p className="mt-2 flex items-center gap-1 text-xs text-slate-500"><MapPin className="h-3.5 w-3.5 shrink-0" />{getRegionName(master.region)}, {getDistrictName(master.region, master.district)}</p>

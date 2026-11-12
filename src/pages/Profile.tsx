@@ -150,7 +150,7 @@ export default function Profile() {
     try {
       const { data, error: loadError } = await supabase
         .from('users')
-        .select('id, name, phone, avatar_url, about_uz, about_ru, experience, services, is_verified, role, region, district, rating, jobs_completed, favorites_count')
+        .select('id, name, phone, avatar_url, about_uz, about_ru, experience, services, category, is_verified, role, region, district, rating, jobs_completed, favorites_count')
         .eq('id', user.id)
         .single();
 

@@ -77,9 +77,17 @@ export default function Chat() {
         (payload) => {
           setMessages(prev => prev.some(message => message.id === payload.new.id) ? prev : [...prev, payload.new]);
           setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
-          if (payload.new.receiver_id === user?.id) {
-            window.dispatchEvent(new Event('messageRead'));
-            window.dispatchEvent(new Event('refreshCounters'));
+          if (payload.new.receiver_id === user?.id && user?.id) {
+            supabase.from('messages')
+              .update({ is_read: true })
+              .eq('id', payload.new.id)
+              .eq('receiver_id', user.id)
+              .then(({ error }) => {
+                if (!error) {
+                  window.dispatchEvent(new Event('messageRead'));
+                  window.dispatchEvent(new Event('refreshCounters'));
+                }
+              });
           }
         }
       )

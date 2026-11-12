@@ -357,6 +357,7 @@ export default function Profile() {
   };
 
   const currentRegion = regions.find(r => r.id === (region || user?.region));
+  const currentDistrict = currentRegion?.districts.find(item => item.id === (district || user?.district));
 
   if (loading) {
     return (
@@ -414,7 +415,7 @@ export default function Profile() {
                   </span>
                   <span className="flex items-center gap-1">
                     <MapPin className="w-4 h-4" />
-                    {language === 'uz' ? currentRegion?.nameUz : currentRegion?.nameRu}
+                    {(language === 'uz' ? currentRegion?.nameUz : currentRegion?.nameRu) || (language === 'uz' ? 'Hudud ko‘rsatilmagan' : 'Регион не указан')}{currentDistrict ? `, ${language === 'uz' ? currentDistrict.nameUz : currentDistrict.nameRu}` : ''}
                   </span>
                 </div>
                 <span className={`inline-block mt-3 px-4 py-1.5 rounded-full text-sm font-medium ${

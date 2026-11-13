@@ -13,7 +13,7 @@ function AvatarUpload({ currentAvatar, onAvatarChange, size = 120 }: {
 }) {
   const [preview, setPreview] = useState<string | null>(currentAvatar || null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const { t } = useApp();
+  const { t, language } = useApp();
 
   useEffect(() => {
     setPreview(currentAvatar || null);
@@ -153,31 +153,33 @@ export default function Profile() {
   }, [user?.id, isLoggedIn]);
 
   const loadUserProfile = async () => {
+    const currentUser = user;
+    if (!currentUser) return;
     setLoading(true);
     try {
       const { data, error: loadError } = await supabase
         .from('users')
         .select('id, name, phone, avatar_url, about_uz, about_ru, experience, services, category, is_verified, role, region, district')
-        .eq('id', user.id)
+        .eq('id', currentUser.id)
         .single();
 
       if (loadError) {
         console.error('Ошибка загрузки профиля:', loadError);
       } else if (data) {
-        setName(data.name || user.name || '');
-        setPhone(data.phone || user.phone || '');
+        setName(data.name || currentUser.name || '');
+        setPhone(data.phone || currentUser.phone || '');
         setRegion(data.region || '');
         setDistrict(data.district || '');
         const savedCategory = categories.find(item => item.id === data.category || item.nameUz === data.category || item.nameRu === data.category);
         setCategory(savedCategory?.id || '');
-        setAvatar(data.avatar_url || user.avatar || '');
+        setAvatar(data.avatar_url || currentUser.avatar || '');
         setAboutUz(data.about_uz || '');
         setAboutRu(data.about_ru || '');
         setExperience(data.experience || 0);
         setServices(data.services || []);
         
         setUser({
-          ...user,
+          ...currentUser,
           name: data.name || user.name,
           phone: data.phone || user.phone,
           avatar: data.avatar_url || user.avatar,

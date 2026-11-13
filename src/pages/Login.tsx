@@ -55,7 +55,7 @@ export default function Login() {
       localStorage.setItem('user_session', JSON.stringify(session));
       
       // Обновляем AppContext
-      setUser(session);
+      setUser({ id: user.id, name: user.name, phone: user.phone, role: user.role });
       setIsLoggedIn(true);
       
       navigate('/');

@@ -3,23 +3,23 @@ import { AppProvider, useApp } from './context/AppContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import BottomNav from './components/BottomNav';
-import Home from './pages/Home';
-import Masters from './pages/Masters';
-import Jobs from './pages/Jobs';
-import Register from './pages/Register';
-import Login from './pages/Login';
-import Profile from './pages/Profile';
-import ProfileJobs from './pages/ProfileJobs';
-import CreateJob from './pages/CreateJob';
-import MasterDetail from './pages/MasterDetail';
-import Job from './pages/Job';
-import Messages from './pages/Messages';
-import Notifications from './pages/Notifications';
-import ProfileResponses from './pages/ProfileResponses';
-import Chat from './pages/Chat';
+const Home = lazy(() => import('./pages/Home'));
+const Masters = lazy(() => import('./pages/Masters'));
+const Jobs = lazy(() => import('./pages/Jobs'));
+const Register = lazy(() => import('./pages/Register'));
+const Login = lazy(() => import('./pages/Login'));
+const Profile = lazy(() => import('./pages/Profile'));
+const ProfileJobs = lazy(() => import('./pages/ProfileJobs'));
+const CreateJob = lazy(() => import('./pages/CreateJob'));
+const MasterDetail = lazy(() => import('./pages/MasterDetail'));
+const Job = lazy(() => import('./pages/Job'));
+const Messages = lazy(() => import('./pages/Messages'));
+const Notifications = lazy(() => import('./pages/Notifications'));
+const ProfileResponses = lazy(() => import('./pages/ProfileResponses'));
+const Chat = lazy(() => import('./pages/Chat'));
 import { supabase } from './lib/supabaseClient';
 import { cache } from './lib/cache';
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 
 function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
@@ -72,6 +72,7 @@ function App() {
     <AppProvider>
       <BrowserRouter>
         <Layout>
+          <Suspense fallback={<div className="flex min-h-[60vh] items-center justify-center bg-slate-50 px-4 text-sm font-medium text-slate-500" role="status">Loading…</div>}>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/masters" element={<Masters />} />
@@ -89,6 +90,7 @@ function App() {
             <Route path="/profile/responses" element={<ProfileResponses />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </Suspense>
         </Layout>
       </BrowserRouter>
     </AppProvider>

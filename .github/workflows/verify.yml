@@ -34,7 +34,7 @@ jobs:
       - name: Dependency security audit
         run: |
           npm audit --json > /tmp/npm-audit.json || true
-          node -e "const a=require('/tmp/npm-audit.json'); console.log(JSON.stringify({summary:a.metadata?.vulnerabilities, packages:Object.entries(a.vulnerabilities||{}).map(([name,v])=>({name,severity:v.severity,direct:v.isDirect,range:v.range,fixAvailable:v.fixAvailable}))}, null, 2))"
+          node -e "const a=require('/tmp/npm-audit.json'); const total=a.metadata?.vulnerabilities?.total; console.log(JSON.stringify({summary:a.metadata?.vulnerabilities, packages:Object.entries(a.vulnerabilities||{}).map(([name,v])=>({name,severity:v.severity,direct:v.isDirect,range:v.range,fixAvailable:v.fixAvailable}))}, null, 2)); if (typeof total !== 'number' || total > 0) process.exit(1)"
       - name: TypeScript check
         run: npm run typecheck
 

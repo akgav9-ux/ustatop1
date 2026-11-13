@@ -180,9 +180,9 @@ export default function Profile() {
         
         setUser({
           ...currentUser,
-          name: data.name || user.name,
-          phone: data.phone || user.phone,
-          avatar: data.avatar_url || user.avatar,
+          name: data.name || currentUser.name,
+          phone: data.phone || currentUser.phone,
+          avatar: data.avatar_url || currentUser.avatar,
           aboutUz: data.about_uz,
           aboutRu: data.about_ru,
           experience: data.experience,

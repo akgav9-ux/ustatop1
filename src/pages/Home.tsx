@@ -144,7 +144,7 @@ export default function Home() {
           <Link to="/masters" className="inline-flex items-center gap-1 text-sm font-bold text-blue-700 hover:text-blue-900">{copy.all}<ArrowRight className="h-4 w-4" /></Link>
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-6">
-          {categories.map((cat, index) => (
+          {categories.map(cat => (
             <Link key={cat.id} to={`/jobs?category=${cat.id}`} className="group overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
               <div className="relative aspect-[1.18] overflow-hidden bg-slate-100">
                 <img src={cat.icon} alt={language === 'uz' ? cat.nameUz : cat.nameRu} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
